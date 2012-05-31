@@ -44,6 +44,7 @@ if(alttype == 'kernel'){
 tmp.trans.update <- 0
 diff<-1
 logL.iter <- 0
+pK.new <- c(0.5,0.5)
 
 while(diff>ptol && niter<maxiter)
 {
@@ -106,15 +107,17 @@ niter<-niter+1
 trans.par1.old <- trans.par1.new
 trans.par2.old <- trans.par2.new
 pii.old<-pii.new
+pK.old<-pK.new
 A.old<-A.new
 f0.old<-f0.new
 f1.old<-f1.new
 
 ## updating the weights and probabilities of hidden states
 
-forwardbackward.res <- forwardbackward1.kernel(x, pii.old, A.old, f0.old, f1.old)
+forwardbackward.res <- forwardbackward1.kernel(x, pii.old, pK.old, A.old, f0.old, f1.old)
 
 gamma <- forwardbackward.res$pr
+K <- forwardbackward.res$pr2
 dgamma <- forwardbackward.res$ts
 c0 <- forwardbackward.res$rescale
 
@@ -125,6 +128,7 @@ tmp.trans.update <- try(update.trans.prob.nhmm(Z, dgamma, gamma, trans.par1.old,
 if(length(tmp.trans.update) > 2){
 
 pii.new <- tmp.trans.update$pii
+pK.new <- apply(K,2,sum)/sum(gamma[, 1])
 A.new <- tmp.trans.update$A
 trans.par1.new <- tmp.trans.update$trans.par1
 trans.par2.new <- tmp.trans.update$trans.par2
@@ -155,6 +159,8 @@ if(nulltype == 4)
 }
 if(nulltype == 5)
 {
+	q6bis <- sum( (K[,1] - gamma[, 1])*x^2)
+	sd0bis <- sqrt(q6/sum(K[,1] - gamma[, 1]))
 	f0.new <- c(0,1,-1,sd0)
 }
 
@@ -166,11 +172,6 @@ if(symmetric == FALSE){
 if(symmetric == TRUE){
 	kern.f1 <- density(c(x,2*f0.new[1]-x),weights=c(gamma[,2],gamma[,2])/sum(c(gamma[,2],gamma[,2])))
 	f1.new <- approx(kern.f1$x, kern.f1$y, x, rule = 2, ties="ordered")$y
-}
-
-if(nulltype >= 4)
-{
-	f1.new[x == 0] = 0
 }
 
 logL.iter <- c(logL.iter,-sum(log(c0)))
@@ -220,6 +221,7 @@ if (L==1)
 tmp.trans.update <- 0
 diff<-1
 logL.iter <- 0
+pK.new <- c(0.5,0.5)
 
 while(diff>ptol && niter<maxiter)
 {
@@ -275,15 +277,17 @@ niter<-niter+1
 trans.par1.old <- trans.par1.new
 trans.par2.old <- trans.par2.new
 pii.old<-pii.new
+pK.old<-pK.new
 A.old<-A.new
 f0.old<-f0.new
 f1.old<-f1.new
 
 ## updating the weights and probabilities of hidden states
 
-forwardbackward.res <- forwardbackward1(x, pii.old, A.old, f0.old, f1.old)
+forwardbackward.res <- forwardbackward1(x, pii.old, pK.old, A.old, f0.old, f1.old)
 
 gamma <- forwardbackward.res$pr
+K <- forwardbackward.res$pr2
 dgamma <- forwardbackward.res$ts
 c0 <- forwardbackward.res$rescale
 
@@ -294,6 +298,7 @@ tmp.trans.update <- try(update.trans.prob.nhmm(Z, dgamma, gamma, trans.par1.old,
 if(length(tmp.trans.update) > 2){
 
 pii.new <- tmp.trans.update$pii
+pK.new <- apply(K,2,sum)/sum(gamma[, 1])
 A.new <- tmp.trans.update$A
 trans.par1.new <- tmp.trans.update$trans.par1
 trans.par2.new <- tmp.trans.update$trans.par2
@@ -324,6 +329,8 @@ if(nulltype == 4)
 }
 if(nulltype == 5)
 {
+	q6bis <- sum( (K[,1] - gamma[, 1])*x^2)
+	sd0bis <- sqrt(q6/sum(K[,1] - gamma[, 1]))
 	f0.new <- c(0,1,-1,sd0)
 }
 
@@ -378,6 +385,7 @@ else if (L>1)
 tmp.trans.update <- 0
 diff<-1
 logL.iter <- 0
+pK.new <- c(0.5,0.5)
 
 while(diff>ptol && niter<maxiter)
 {
@@ -396,6 +404,7 @@ trans.par2.new[4] <- abs(trans.par2.new[4])
 
 tmp.trans.prob <- compute.A.nhmm (Z, trans.par1.new, trans.par2.new,dist.included=dist.included)
 pii.new <- tmp.trans.prob$pii
+pK.new <- c(0.5,0.5)
 A.new <- tmp.trans.prob$A
 
 pc.new<-rep(1, L)/L
@@ -437,6 +446,7 @@ niter<-niter+1
 trans.par1.old <- trans.par1.new
 trans.par2.old <- trans.par2.new
 pii.old<-pii.new
+pK.old<-pK.new
 A.old<-A.new
 pc.old <- pc.new
 f0.old<-f0.new
@@ -444,10 +454,11 @@ f1.old<-f1.new
 
 ## updating the weights and probabilities of hidden states
 
-forwardbackward.res <- forwardbackward(x, pii.old, A.old, pc.old, f0.old, f1.old)
+forwardbackward.res <- forwardbackward(x, pii.old, pK.old, A.old, pc.old, f0.old, f1.old)
 
 gamma <- forwardbackward.res$pr
 dgamma <- forwardbackward.res$ts
+K <- forwardbackward.res$pr2
 omega <- forwardbackward.res$wt
 c0 <- forwardbackward.res$rescale
 
@@ -458,6 +469,7 @@ tmp.trans.update <- try(update.trans.prob.nhmm(Z, dgamma, gamma, trans.par1.old,
 if(length(tmp.trans.update) > 2){
 
 pii.new <- tmp.trans.update$pii
+pK.new <- apply(K,2,sum)/sum(gamma[, 1])
 A.new <- tmp.trans.update$A
 trans.par1.new <- tmp.trans.update$trans.par1
 trans.par2.new <- tmp.trans.update$trans.par2
@@ -488,6 +500,8 @@ if(nulltype == 4)
 }
 if(nulltype == 5)
 {
+	q6bis <- sum( (K[,1] - gamma[, 1])*x^2)
+	sd0bis <- sqrt(q6/sum(K[,1] - gamma[, 1]))
 	f0.new <- c(0,1,-1,sd0)
 }
 
