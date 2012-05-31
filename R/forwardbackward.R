@@ -27,7 +27,7 @@ else
 f1x<-rep(0, NUM)
 for (c in 1:L)
 {
-  f1x<-f1x+pc[c]*dnorm(x, f1[c, 1], f1[c, 2]) * (x!=0)
+  f1x<-f1x+pc[c]*dnorm(x, f1[c, 1], f1[c, 2])
 }
 if(length(f0) >= 4)
 {
