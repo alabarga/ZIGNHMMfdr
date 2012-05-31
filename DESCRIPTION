@@ -1,0 +1,12 @@
+Package: ZIGNHMMfdr
+Type: ZIGNHMMfdr Package
+Title: Compute FDR under dependence using NHMM and ZIG
+Version: 1.0.0
+Date: 2011-06-19
+Author: Pei Fen Kuan <pfkuan@bios.unc.edu>
+Maintainer: Pei Fen Kuan <pfkuan@bios.unc.edu>
+Depends: R (>= 2.10.0), MASS, locfdr
+Description: The NHMMfdr package implements the non-homogeneous Hidden Markov Model based FDR control as described in Kuan et al., 2011 for multiple comparison adjustment under dependence. It allows for prior information to be incorporated in the model to improve detection of significant tests.  
+License: GPL (version 2 or later)
+LazyLoad: yes
+Packaged: 2012-01-26 14:26:50 UTC; peifenkuan
