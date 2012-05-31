@@ -82,9 +82,6 @@ mu0 <- q5/sum(gamma[, 1])
 q6 <- sum(gamma[, 1]*(x-mu0)*(x-mu0))
 sd0 <- sqrt(q6/sum(gamma[, 1]))
 
-q6bis <- sum( ((x!=0) * Z[,1] * gamma[, 1] - (x!=0) * gamma[, 1])*(x-mu0)*(x-mu0))
-sd0bis <- sqrt(q6/sum((x!=0) * Z[,1] * gamma[, 1] - (x!=0) * gamma[, 1]))
-
 f0.new<-c(mu0, sd0)
 
 if(nulltype == 0){
@@ -103,6 +100,8 @@ if(nulltype == 4)
 }
 if(nulltype == 5)
 {
+	q6bis <- sum( (Z[,1] - gamma[, 1])*x^2)
+	sd0bis <- sqrt(q6/sum(Z[,1] - gamma[, 1]))
 	f0.new <- c(0,1,-1,sd0bis)
 }
 
@@ -220,9 +219,6 @@ mu0 <- q5/sum(gamma[, 1])
 q6 <- sum(gamma[, 1]*(x-mu0)*(x-mu0))
 sd0 <- sqrt(q6/sum(gamma[, 1]))
 
-q6bis <- sum( ((x!=0) * Z[,1] * gamma[, 1] - (x!=0) * gamma[, 1])*(x-mu0)*(x-mu0))
-sd0bis <- sqrt(q6/sum((x!=0) * Z[,1] * gamma[, 1] -(x!=0) * gamma[, 1]))
-
 f0.new<-c(mu0, sd0)
 
 if(nulltype == 0){
@@ -241,6 +237,8 @@ if(nulltype == 4)
 }
 if(nulltype == 5)
 {
+	q6bis <- sum( (Z[,1] - gamma[, 1])*x^2)
+	sd0bis <- sqrt(q6/sum(Z[,1] - gamma[, 1]))
 	f0.new <- c(0,1,-1,sd0bis)
 }
 
@@ -353,9 +351,6 @@ mu0 <- q5/sum(gamma[, 1])
 q6 <- sum(gamma[, 1]*(x-mu0)*(x-mu0))
 sd0 <- sqrt(q6/sum(gamma[, 1]))
 
-q6bis <- sum( ((x!=0) * Z[,1] * gamma[, 1] - (x!=0) * gamma[, 1])*(x-mu0)*(x-mu0))
-sd0bis <- sqrt(q6/sum((x!=0) * Z[,1] * gamma[, 1] - (x!=0) * gamma[, 1]))
-
 f0.new <- c(mu0, sd0)
 
 if(nulltype == 0){
@@ -374,6 +369,8 @@ if(nulltype == 4)
 }
 if(nulltype == 5)
 {
+	q6bis <- sum( (Z[,1] - gamma[, 1])*x^2)
+	sd0bis <- sqrt(q6/sum(Z[,1] - gamma[, 1]))
 	f0.new <- c(0,1,-1,sd0bis)
 }
 

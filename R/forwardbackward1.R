@@ -1,18 +1,37 @@
 forwardbackward1 <-
-function(x, pii, A, f0, f1)
+function(x, pii, pZ, A, f0, f1)
 {
 
 ## Initialize
 
 NUM<-length(x)
 
+delta = length(x[x==0])/length(x)
 ## Densities
 
-delta = length(x[x==0])/length(x)
-f0x<- delta * (x==0) + (1-delta)*dnorm(x, f0[1], f0[2]) * (x!=0)
-#f0x<-dnorm(x, f0[1], f0[2])
+f0x <- c()
+if(length(f0) < 4)
+{
+	f0x<-dnorm(x, f0[1], f0[2])
+}
+else
+{
+	if(length(f0) == 4)
+	{
+		f0x<- delta * (x==0) + (1-delta)*dnorm(x, f0[1], f0[2]) * (x!=0)
+	}
+	if(length(f0) == 5)
+	{
+		f0x<- delta * (x==0) + (1-delta)* ( pZ[1] * dnorm(x, f0[1], f0[2]) + pZ[2] * dnorm(x, f0[1], f0[4])) * (x!=0)
+	}
+}
+
+
 f1x<-dnorm(x, f1[1], f1[2])
-f1x[x==0] = 0
+if(length(f0) >= 4)
+{
+	f1x[x==0] = 0
+}
 
 ## the backward-forward procedure
 
@@ -60,7 +79,16 @@ dgamma <- gamma.tmp$dgamma
 dim(gamma) <- c(NUM,2)
 dim(dgamma) <- c(2, 2, (NUM-1))
 
-forwardbackward.var<-list(bw=alpha, fw=beta, lf=lfdr, pr=gamma, ts=dgamma, rescale=c0)
+Z<-matrix(1:(NUM*2), NUM, 2, byrow=TRUE)
+
+if(length(f0) == 5)
+{
+	Z[,1] <- pZ[1]*dnorm(x, f0[1], f0[2])/( pZ[1] * dnorm(x, f0[1], f0[2]) + pZ[2] * dnorm(x, f0[1], f0[4]))
+	Z[,2] <- 1 - Z[,1]
+}
+
+
+forwardbackward.var<-list(bw=alpha, fw=beta, lf=lfdr, pr=gamma, pr2=Z, ts=dgamma, rescale=c0)
 return(forwardbackward.var)
   
 }

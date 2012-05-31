@@ -23,7 +23,7 @@ else
 	}
 	if(length(f0) == 5)
 	{
-		f0x<- delta * (x==0) + (1-delta)* ( pZ[1] * dnorm(x, f0[1], f0[2]) + pZ[2] * dnorm(x, f0[1], f0[4])) * (x!=0)
+		f0x<- delta * (x==0) + (1-delta)* ( pZ[1] * dnorm(x, f0[1], f0[2]) + (1-pZ[1]) * dnorm(x, f0[1], f0[4])) * (x!=0)
 	}
 }
 
@@ -43,7 +43,7 @@ Z<-matrix(1:(NUM*2), NUM, 2, byrow=TRUE)
 
 if(length(f0) == 5)
 {
-	Z[,1] <- pZ[1]*dnorm(x, f0[1], f0[2])/( pZ[1] * dnorm(x, f0[1], f0[2]) + pZ[2] * dnorm(x, f0[1], f0[4]))
+	Z[,1] <- pZ[1]*dnorm(x, f0[1], f0[2])/f0x * gamma[,1] * (1-delta)
 	Z[,2] <- 1 - Z[,1]
 
 }

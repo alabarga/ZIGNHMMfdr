@@ -1,19 +1,38 @@
 forwardbackward <-
-function(x, pii, A, pc, f0, f1)
+function(x, pii, pZ, A, pc, f0, f1)
 {
 
 NUM<-length(x)
 L<-length(pc)
-
 delta = length(x[x==0])/length(x)
-f0x<- delta * (x==0) + (1-delta)*dnorm(x, 0, 1) * (x!=0)
-#f0x<-dnorm(x, f0[1], f0[2])
+## Densities
+
+f0x <- c()
+if(length(f0) < 4)
+{
+	f0x<-dnorm(x, f0[1], f0[2])
+}
+else
+{
+	if(length(f0) == 4)
+	{
+		f0x<- delta * (x==0) + (1-delta)*dnorm(x, f0[1], f0[2]) * (x!=0)
+	}
+	if(length(f0) == 5)
+	{
+		f0x<- delta * (x==0) + (1-delta)* ( pZ[1] * dnorm(x, f0[1], f0[2]) + pZ[2] * dnorm(x, f0[1], f0[4])) * (x!=0)
+	}
+}
+
 f1x<-rep(0, NUM)
 for (c in 1:L)
 {
   f1x<-f1x+pc[c]*dnorm(x, f1[c, 1], f1[c, 2]) * (x!=0)
 }
-
+if(length(f0) >= 4)
+{
+	f1x[x==0] = 0
+}
 
 alpha<-matrix(rep(0, NUM*2), NUM, 2, byrow=TRUE)
 c0<-rep(0, NUM)
@@ -66,8 +85,15 @@ omega<-matrix(rep(0, NUM*L), NUM, L, byrow=TRUE)
     omega[x==0, c]<-0
   }
 
+Z<-matrix(1:(NUM*2), NUM, 2, byrow=TRUE)
 
-forwardbackward.var<-list(bw=alpha, fw=beta, lf=lfdr, pr=gamma, ts=dgamma, wt=omega, rescale=c0)
+if(length(f0) == 5)
+{
+	Z[,1] <- pZ[1]*dnorm(x, f0[1], f0[2])/( pZ[1] * dnorm(x, f0[1], f0[2]) + pZ[2] * dnorm(x, f0[1], f0[4]))
+	Z[,2] <- 1 - Z[,1]
+}
+
+forwardbackward.var<-list(bw=alpha, fw=beta, lf=lfdr, pr=gamma, pr2=Z, ts=dgamma, wt=omega, rescale=c0)
 return(forwardbackward.var)
   
 }

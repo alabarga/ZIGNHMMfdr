@@ -17,6 +17,7 @@ if(alttype == 'kernel'){
 ### initializing model parameters
 
 pii.new <- c(0.95, 0.05)
+pZ.new <- c(0.5,0.5)
 A.new <- array(c(0.95, 0.05, 0.05, 0.95),c(2,2,NUM - 1))
 
 f0.new<-c(0, 1)
@@ -59,15 +60,17 @@ while(diff>ptol && niter<maxiter)
 niter<-niter+1
 
 pii.old <- pii.new
+pZ.old <- pZ.new
 A.old <- A.new
 f0.old <- f0.new
 f1.old <- f1.new
 
 ## updating the weights and probabilities of hidden states
 
-forwardbackward.res <- forwardbackward1.kernel(x, pii.old, A.old, f0.old, f1.old)
+forwardbackward.res <- forwardbackward1.kernel(x, pii.old, pZ.old, A.old, f0.old, f1.old)
 
 gamma <- forwardbackward.res$pr
+Z <- forwardbackward.res$pr2
 dgamma <- forwardbackward.res$ts
 c0 <- forwardbackward.res$rescale
 
@@ -95,6 +98,9 @@ mu0 <- q5/sum(gamma[, 1])
 q6 <- sum(gamma[, 1]*(x-mu0)*(x-mu0))
 sd0 <- sqrt(q6/sum(gamma[, 1]))
 
+q6bis <- sum( ((x!=0) * Z[,1] * gamma[, 1] - (x!=0) * gamma[, 1])*(x-mu0)*(x-mu0))
+sd0bis <- sqrt(q6/sum((x!=0) * Z[,1] * gamma[, 1] - (x!=0) * gamma[, 1]))
+
 f0.new<-c(mu0, sd0)
 
 if(nulltype == 0){
@@ -113,7 +119,7 @@ if(nulltype == 4)
 }
 if(nulltype == 5)
 {
-	f0.new <- c(0,1,-1,sd0)
+	f0.new <- c(0,1,-1,sd0bis)
 }
 
 if(symmetric == FALSE){
@@ -166,6 +172,7 @@ if (L==1)
 {
 
 pii.new <- c(0.95, 0.05)
+pZ.new <- c(0.5,0.5)
 A.new <- array(c(0.95, 0.05, 0.05, 0.95),c(2,2,NUM - 1))
 
 f0.new<-c(0, 1)
@@ -205,15 +212,17 @@ while(diff>ptol && niter<maxiter)
 niter<-niter+1
 
 pii.old <- pii.new
+pZ.old <- pZ.new
 A.old <- A.new
 f0.old <- f0.new
 f1.old <- f1.new
 
 ## updating the weights and probabilities of hidden states
 
-forwardbackward.res <- forwardbackward1(x, pii.old, A.old, f0.old, f1.old)
+forwardbackward.res <- forwardbackward1(x, pii.old, pZ.old, A.old, f0.old, f1.old)
 
 gamma <- forwardbackward.res$pr
+Z <- forwardbackward.res$pr2
 dgamma <- forwardbackward.res$ts
 c0 <- forwardbackward.res$rescale
 
@@ -241,6 +250,9 @@ mu0 <- q5/sum(gamma[, 1])
 q6 <- sum(gamma[, 1]*(x-mu0)*(x-mu0))
 sd0 <- sqrt(q6/sum(gamma[, 1]))
 
+q6bis <- sum( ((x!=0) * Z[,1] * gamma[, 1] - (x!=0) * gamma[, 1])*(x-mu0)*(x-mu0))
+sd0bis <- sqrt(q6/sum((x!=0) * Z[,1] * gamma[, 1] - (x!=0) * gamma[, 1]))
+
 f0.new<-c(mu0, sd0)
 
 if(nulltype == 0){
@@ -259,7 +271,7 @@ if(nulltype == 4)
 }
 if(nulltype == 5)
 {
-	f0.new <- c(0,1,-1,sd0)
+	f0.new <- c(0,1,-1,sd0bis)
 }
 
 q1 <- sum(gamma[, 2])
@@ -305,6 +317,7 @@ else if (L>1)
 {
 
 pii.new<-c(0.95, 0.05)
+pZ.new <- c(0.5,0.5)
 A.new <- array(c(0.95, 0.5, 0.05, 0.5),c(2,2,NUM - 1))
 
 f0.new<-c(0, 1)
@@ -347,6 +360,7 @@ while(diff>ptol && niter<maxiter)
 niter <- niter+1
 
 pii.old <- pii.new
+pZ.old <- pZ.new
 A.old <- A.new
 pc.old <- pc.new
 f0.old <- f0.new
@@ -354,9 +368,10 @@ f1.old <- f1.new
 
 ## updating the weights and probabilities of hidden states
 
-forwardbackward.res <- forwardbackward(x, pii.old, A.old, pc.old, f0.old, f1.old)
+forwardbackward.res <- forwardbackward(x, pii.old, pZ.old, A.old, pc.old, f0.old, f1.old)
 
 gamma <- forwardbackward.res$pr
+Z <- forwardbackward.res$pr2
 dgamma <- forwardbackward.res$ts
 omega <- forwardbackward.res$wt
 c0 <- forwardbackward.res$rescale
@@ -385,6 +400,9 @@ mu0 <- q5/sum(gamma[, 1])
 q6 <- sum(gamma[, 1]*(x-mu0)*(x-mu0))
 sd0 <- sqrt(q6/sum(gamma[, 1]))
 
+q6bis <- sum( ((x!=0) * Z[,1] * gamma[, 1] - (x!=0) * gamma[, 1])*(x-mu0)*(x-mu0))
+sd0bis <- sqrt(q6/sum((x!=0) * Z[,1] * gamma[, 1] - (x!=0) * gamma[, 1]))
+
 f0.new<-c(mu0, sd0)
 
 if(nulltype == 0){
@@ -403,7 +421,7 @@ if(nulltype == 4)
 }
 if(nulltype == 5)
 {
-	f0.new <- c(0,1,-1,sd0)
+	f0.new <- c(0,1,-1,sd0bis)
 }
 
 mus <- 1:L
