@@ -47,6 +47,7 @@ if(nulltype >= 4)
 }
 
 ptheta.new <- c(0.95,0.05)
+pZ.new <- c(0.5,0.5)
 
 diff<-1
 
@@ -58,25 +59,31 @@ while(diff>ptol && niter<maxiter)
 niter<-niter+1
 
 ptheta.old <- ptheta.new
+pZ.old <- pZ.new
 f0.old <- f0.new
 f1.old <- f1.new
 
 ## updating the weights and probabilities of hidden states
 
-forwardbackward.res <- forwardbackward1.indep.kernel(x, ptheta.old, f0.old, f1.old)
+forwardbackward.res <- forwardbackward1.indep.kernel(x, ptheta.old, pZ.old, f0.old, f1.old)
 
 gamma <- forwardbackward.res$pr
+Z <- forwardbackward.res$pr2
 c0 <- forwardbackward.res$rescale
 
 ## updating the parameter estimates
 
 ptheta.new <- apply(gamma,2,sum)/NUM
+pZ.new <- apply(Z,2,sum)/sum(gamma[, 1])
 
 q5 <- sum(gamma[, 1]*x)
 mu0 <- q5/sum(gamma[, 1])
 
 q6 <- sum(gamma[, 1]*(x-mu0)*(x-mu0))
 sd0 <- sqrt(q6/sum(gamma[, 1]))
+
+q6bis <- sum( ((x!=0) * Z[,1] * gamma[, 1] - (x!=0) * gamma[, 1])*(x-mu0)*(x-mu0))
+sd0bis <- sqrt(q6/sum((x!=0) * Z[,1] * gamma[, 1] - (x!=0) * gamma[, 1]))
 
 f0.new<-c(mu0, sd0)
 
@@ -96,7 +103,7 @@ if(nulltype == 4)
 }
 if(nulltype == 5)
 {
-	f0.new <- c(0,1,-1,sd0)
+	f0.new <- c(0,1,-1,sd0bis)
 }
 
 if(symmetric == FALSE){
@@ -178,6 +185,7 @@ if(nulltype == 5)
 
 f1.new<-c(2, 1)
 ptheta.new <- c(0.95,0.05)
+pZ.new <- c(0.5, 0.5)
 
 diff<-1
 
@@ -189,25 +197,31 @@ while(diff>ptol && niter<maxiter)
 niter<-niter+1
 
 ptheta.old <- ptheta.new
+pZ.old <- pZ.new
 f0.old <- f0.new
 f1.old <- f1.new
 
 ## updating the weights and probabilities of hidden states
 
-forwardbackward.res <- forwardbackward1.indep(x, ptheta.old, f0.old, f1.old)
+forwardbackward.res <- forwardbackward1.indep(x, ptheta.old, pZ.old, f0.old, f1.old)
 
 gamma <- forwardbackward.res$pr
+Z <- forwardbackward.res$pr2
 c0 <- forwardbackward.res$rescale
 
 ## updating the parameter estimates
 
 ptheta.new <- apply(gamma,2,sum)/NUM
+pZ.new <- apply(Z,2,sum)/sum(gamma[, 1])
 
 q5 <- sum(gamma[, 1]*x)
 mu0 <- q5/sum(gamma[, 1])
 
 q6 <- sum(gamma[, 1]*(x-mu0)*(x-mu0))
 sd0 <- sqrt(q6/sum(gamma[, 1]))
+
+q6bis <- sum( ((x!=0) * Z[,1] * gamma[, 1] - (x!=0) * gamma[, 1])*(x-mu0)*(x-mu0))
+sd0bis <- sqrt(q6/sum((x!=0) * Z[,1] * gamma[, 1] -(x!=0) * gamma[, 1]))
 
 f0.new<-c(mu0, sd0)
 
@@ -227,7 +241,7 @@ if(nulltype == 4)
 }
 if(nulltype == 5)
 {
-	f0.new <- c(0,1,-1,sd0)
+	f0.new <- c(0,1,-1,sd0bis)
 }
 
 q1 <- sum(gamma[, 2])
@@ -272,6 +286,7 @@ else if (L>1)
 {
 
 ptheta.new <- c(0.95, 0.05)
+pZ.new <- c(0.5, 0.5)
 pc.new <- rep(1, L)/L
 mus <- seq(from=-1, by=1.5, length=L)
 sds <- rep(1, L)
@@ -313,27 +328,33 @@ while(diff>ptol && niter<maxiter)
 niter <- niter+1
 
 ptheta.old <- ptheta.new
+pZ.old <- pZ.new
 pc.old <- pc.new
 f0.old <- f0.new
 f1.old <- f1.new
 
 ## updating the weights and probabilities of hidden states
 
-forwardbackward.res <- forwardbackward.indep(x, ptheta.old, pc.old, f0.old, f1.old)
+forwardbackward.res <- forwardbackward.indep(x, ptheta.old, pZ.old, pc.old, f0.old, f1.old)
 
 gamma <- forwardbackward.res$pr
+Z <- forwardbackward.res$pr2
 omega <- forwardbackward.res$wt
 c0 <- forwardbackward.res$rescale
 
 ## updating the parameter estimates
 
 ptheta.new <- apply(gamma,2,sum)/NUM
+pZ.new <- apply(Z,2,sum)/sum(gamma[, 1])
 
 q5 <- sum(gamma[, 1]*x)
 mu0 <- q5/sum(gamma[, 1])
 
 q6 <- sum(gamma[, 1]*(x-mu0)*(x-mu0))
 sd0 <- sqrt(q6/sum(gamma[, 1]))
+
+q6bis <- sum( ((x!=0) * Z[,1] * gamma[, 1] - (x!=0) * gamma[, 1])*(x-mu0)*(x-mu0))
+sd0bis <- sqrt(q6/sum((x!=0) * Z[,1] * gamma[, 1] - (x!=0) * gamma[, 1]))
 
 f0.new <- c(mu0, sd0)
 
@@ -353,7 +374,7 @@ if(nulltype == 4)
 }
 if(nulltype == 5)
 {
-	f0.new <- c(0,1,-1,sd0)
+	f0.new <- c(0,1,-1,sd0bis)
 }
 
 
