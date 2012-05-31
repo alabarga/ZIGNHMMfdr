@@ -21,7 +21,7 @@ function(x, Z = NULL, dist = NULL, log.transform.dist = TRUE, alttype = 'kernel'
 	if(alttype=='kernel'){
 		L = 1
 	}
-	if(nulltype >3){
+	if(nulltype >5){
 		cat('Error: nulltype must be 0, 1, 2 or 3','\n')
 		return(0)
 	}

@@ -69,7 +69,7 @@ locfdr_p0 <- 0
 if(nulltype == 0){
 	f0.new <- c(0,1)
 }
-else
+if(nulltype == 1 | nulltype == 2)
 {
 	locfdr_p0 <- locfdr(x,plot=0)
 }
@@ -79,9 +79,25 @@ if(nulltype == 1){
 if(nulltype == 2){
 	f0.new <- c(locfdr_p0$fp0[5,1],locfdr_p0$fp0[5,2])
 }
+
+if(nulltype == 4)
+{
+	f0.new <- c(0,1,-1)
+}
+if(nulltype == 5)
+{
+	f0.new <- c(0,1,-1,0.5)
+}
+
 f1.new <- 0.5*dnorm(x,2,1)+0.5*dnorm(x,-2,1)
 }
-f1.new[x == 0] = 0
+
+
+
+if(nulltype >= 4)
+{
+	f1.new[x == 0] = 0
+}
 
 ### The E-M Algorithm
 
@@ -133,6 +149,15 @@ if(nulltype == 2){
 	f0.new <- c(locfdr_p0$fp0[5,1],locfdr_p0$fp0[5,2])
 }
 
+if(nulltype == 4)
+{
+	f0.new <- c(0,1,-1)
+}
+if(nulltype == 5)
+{
+	f0.new <- c(0,1,-1,sd0)
+}
+
 if(symmetric == FALSE){
 	kern.f1 <- density(x,weights=gamma[,2]/sum(gamma[,2]))
 	f1.new <- approx(kern.f1$x, kern.f1$y, x, rule = 2, ties="ordered")$y
@@ -143,7 +168,10 @@ if(symmetric == TRUE){
 	f1.new <- approx(kern.f1$x, kern.f1$y, x, rule = 2, ties="ordered")$y
 }
 
-f1.new[x == 0] = 0
+if(nulltype >= 4)
+{
+	f1.new[x == 0] = 0
+}
 
 logL.iter <- c(logL.iter,-sum(log(c0)))
 
@@ -217,7 +245,7 @@ locfdr_p0 <- 0
 if(nulltype == 0){
 	f0.new <- c(0,1)
 }
-else
+if(nulltype == 1 | nulltype == 2)
 {
 	locfdr_p0 <- locfdr(x,plot=0)
 }
@@ -227,6 +255,16 @@ if(nulltype == 1){
 if(nulltype == 2){
 	f0.new <- c(locfdr_p0$fp0[5,1],locfdr_p0$fp0[5,2])
 }
+
+if(nulltype == 4)
+{
+	f0.new <- c(0,1,-1)
+}
+if(nulltype == 5)
+{
+	f0.new <- c(0,1,-1,0.5)
+}
+
 f1.new <- c(2, 1)
 }
 
@@ -278,6 +316,15 @@ if(nulltype == 1){
 }
 if(nulltype == 2){
 	f0.new <- c(locfdr_p0$fp0[5,1],locfdr_p0$fp0[5,2])
+}
+
+if(nulltype == 4)
+{
+	f0.new <- c(0,1,-1)
+}
+if(nulltype == 5)
+{
+	f0.new <- c(0,1,-1,sd0)
 }
 
 q1<-sum(gamma[, 2])
@@ -359,7 +406,7 @@ locfdr_p0 <- 0
 if(nulltype == 0){
 	f0.new <- c(0,1)
 }
-else
+if(nulltype == 1 | nulltype == 2)
 {
 	locfdr_p0 <- locfdr(x,plot=0)
 }
@@ -369,6 +416,16 @@ if(nulltype == 1){
 if(nulltype == 2){
 	f0.new <- c(locfdr_p0$fp0[5,1],locfdr_p0$fp0[5,2])
 }
+
+if(nulltype == 4)
+{
+	f0.new <- c(0,1,-1)
+}
+if(nulltype == 5)
+{
+	f0.new <- c(0,1,-1,0.5)
+}
+
 f1.new<-cbind(mus, sds)
 
 }
@@ -423,6 +480,15 @@ if(nulltype == 1){
 }
 if(nulltype == 2){
 	f0.new <- c(locfdr_p0$fp0[5,1],locfdr_p0$fp0[5,2])
+}
+
+if(nulltype == 4)
+{
+	f0.new <- c(0,1,-1)
+}
+if(nulltype == 5)
+{
+	f0.new <- c(0,1,-1,sd0)
 }
 
 mus<-1:L
