@@ -44,7 +44,9 @@ if(alttype == 'kernel'){
 tmp.trans.update <- 0
 diff<-1
 logL.iter <- 0
-pK.new <- c(0.5,0.5)
+
+ptheta.new <-c(0.95,0.05)
+pnu.new <- c(0.5,0.5)
 
 while(diff>ptol && niter<maxiter)
 {
@@ -107,17 +109,18 @@ niter<-niter+1
 trans.par1.old <- trans.par1.new
 trans.par2.old <- trans.par2.new
 pii.old<-pii.new
-pK.old<-pK.new
+ptheta.old<-ptheta.new
+pnu.old<-pnu.new
 A.old<-A.new
 f0.old<-f0.new
 f1.old<-f1.new
 
 ## updating the weights and probabilities of hidden states
 
-forwardbackward.res <- forwardbackward1.kernel(x, pii.old, pK.old, A.old, f0.old, f1.old)
+forwardbackward.res <- forwardbackward1.kernel(x, pii.old, pnu.old, A.old, f0.old, f1.old)
 
 gamma <- forwardbackward.res$pr
-K <- forwardbackward.res$pr2
+nu <- forwardbackward.res$pr2
 dgamma <- forwardbackward.res$ts
 c0 <- forwardbackward.res$rescale
 
@@ -128,7 +131,9 @@ tmp.trans.update <- try(update.trans.prob.nhmm(Z, dgamma, gamma, trans.par1.old,
 if(length(tmp.trans.update) > 2){
 
 pii.new <- tmp.trans.update$pii
-pK.new <- apply(K,2,sum)/sum(gamma[, 1])
+ptheta.new <- apply(gamma,2,sum)/NUM
+pnu.new[1] <- sum((x!=0) * gamma[, 1] * nu[,1])/sum((x!=0) * gamma[, 1])
+pnu.new[2] <- 1 - pnu.new[1]
 A.new <- tmp.trans.update$A
 trans.par1.new <- tmp.trans.update$trans.par1
 trans.par2.new <- tmp.trans.update$trans.par2
@@ -159,9 +164,9 @@ if(nulltype == 4)
 }
 if(nulltype == 5)
 {
-	q6bis <- sum( (K[,1] - gamma[, 1])*x^2)
-	sd0bis <- sqrt(q6/sum(K[,1] - gamma[, 1]))
-	f0.new <- c(0,1,-1,sd0)
+	q6bis <- sum( ((x!=0) * gamma[, 1] * nu[,1])*x^2)
+	sd0bis <- sqrt(q6bis/sum((x!=0) * gamma[, 1] * nu[,1]))
+	f0.new <- c(0,1,-1,sd0bis)
 }
 
 if(symmetric == FALSE){
@@ -200,10 +205,10 @@ if (nulltype > 0) {
 	BIC <- logL - (3 + npar.A - 2)*log(NUM)/2 
 }
 
-em.var<-list(pii=pii.new, A=A.new, f0=f0.new, f1=kern.f1, LIS=lfdr, logL=logL, BIC=BIC, ni=niter, trans.par1 = trans.par1.new, trans.par2 = trans.par2.new, converged=converged,logL.iter=logL.iter[-1], gamma = gamma, dgamma = dgamma) 
+em.var<-list(ptheta = ptheta.new, pnu = pnu.new, pii=pii.new, A=A.new, f0=f0.new, f1=kern.f1, LIS=lfdr, logL=logL, BIC=BIC, ni=niter, trans.par1 = trans.par1.new, trans.par2 = trans.par2.new, converged=converged,logL.iter=logL.iter[-1], gamma = gamma, dgamma = dgamma) 
 } else {
 BIC<- logL<- (-Inf)
-em.var<-list(pii=pii.old, A=A.old, f0=f0.old, f1=kern.f1, LIS=lfdr, logL=logL, BIC= BIC, ni=niter, trans.par1 = transpar1.old, trans.par2 = trans.par2.old, converged=converged,logL.iter=logL.iter[-1], gamma = gamma, dgamma = dgamma)
+em.var<-list(ptheta = ptheta.old, pnu = pnu.old, pii=pii.old, A=A.old, f0=f0.old, f1=kern.f1, LIS=lfdr, logL=logL, BIC= BIC, ni=niter, trans.par1 = transpar1.old, trans.par2 = trans.par2.old, converged=converged,logL.iter=logL.iter[-1], gamma = gamma, dgamma = dgamma)
 }
 
 }
@@ -221,7 +226,9 @@ if (L==1)
 tmp.trans.update <- 0
 diff<-1
 logL.iter <- 0
-pK.new <- c(0.5,0.5)
+
+ptheta.new <-c(0.95,0.05)
+pnu.new <- c(0.5,0.5)
 
 while(diff>ptol && niter<maxiter)
 {
@@ -277,17 +284,18 @@ niter<-niter+1
 trans.par1.old <- trans.par1.new
 trans.par2.old <- trans.par2.new
 pii.old<-pii.new
-pK.old<-pK.new
+ptheta.old<-ptheta.new
+pnu.old<-pnu.new
 A.old<-A.new
 f0.old<-f0.new
 f1.old<-f1.new
 
 ## updating the weights and probabilities of hidden states
 
-forwardbackward.res <- forwardbackward1(x, pii.old, pK.old, A.old, f0.old, f1.old)
+forwardbackward.res <- forwardbackward1(x, pii.old, pnu.old, A.old, f0.old, f1.old)
 
 gamma <- forwardbackward.res$pr
-K <- forwardbackward.res$pr2
+nu <- forwardbackward.res$pr2
 dgamma <- forwardbackward.res$ts
 c0 <- forwardbackward.res$rescale
 
@@ -298,7 +306,9 @@ tmp.trans.update <- try(update.trans.prob.nhmm(Z, dgamma, gamma, trans.par1.old,
 if(length(tmp.trans.update) > 2){
 
 pii.new <- tmp.trans.update$pii
-pK.new <- apply(K,2,sum)/sum(gamma[, 1])
+ptheta.new <- apply(gamma,2,sum)/NUM
+pnu.new[1] <- sum((x!=0) * gamma[, 1] * nu[,1])/sum((x!=0) * gamma[, 1])
+pnu.new[2] <- 1 - pnu.new[1]
 A.new <- tmp.trans.update$A
 trans.par1.new <- tmp.trans.update$trans.par1
 trans.par2.new <- tmp.trans.update$trans.par2
@@ -329,9 +339,9 @@ if(nulltype == 4)
 }
 if(nulltype == 5)
 {
-	q6bis <- sum( (K[,1] - gamma[, 1])*x^2)
-	sd0bis <- sqrt(q6/sum(K[,1] - gamma[, 1]))
-	f0.new <- c(0,1,-1,sd0)
+	q6bis <- sum( ((x!=0) * gamma[, 1] * nu[,1])*x^2)
+	sd0bis <- sqrt(q6bis/sum((x!=0) * gamma[, 1] * nu[,1]))
+	f0.new <- c(0,1,-1,sd0bis)
 }
 
 q1<-sum(gamma[, 2])
@@ -367,10 +377,10 @@ if (nulltype > 0) {
 	BIC <- logL - (3*L + npar.A)*log(NUM)/2 
 }
 
-em.var<-list(pii=pii.new, A=A.new, f0=f0.new, f1=f1.new, LIS=lfdr, logL=logL, BIC=BIC, ni=niter, trans.par1 = trans.par1.new, trans.par2 = trans.par2.new, converged=converged,logL.iter=logL.iter[-1], gamma = gamma, dgamma = dgamma) 
+em.var<-list(ptheta = ptheta.new, pnu = pnu.new, pii=pii.new, A=A.new, f0=f0.new, f1=f1.new, LIS=lfdr, logL=logL, BIC=BIC, ni=niter, trans.par1 = trans.par1.new, trans.par2 = trans.par2.new, converged=converged,logL.iter=logL.iter[-1], gamma = gamma, dgamma = dgamma) 
 } else {
 BIC<- logL<- (-Inf)
-em.var<-list(pii=pii.old, A=A.old, f0=f0.old, f1=f1.old, LIS=lfdr, logL=logL, BIC= BIC, ni=niter, trans.par1 = trans.par1.old, trans.par2 = trans.par2.old, converged=converged,logL.iter=logL.iter[-1], gamma = gamma, dgamma = dgamma)
+em.var<-list(ptheta = ptheta.old, pnu = pnu.old, pii=pii.old, A=A.old, f0=f0.old, f1=f1.old, LIS=lfdr, logL=logL, BIC= BIC, ni=niter, trans.par1 = trans.par1.old, trans.par2 = trans.par2.old, converged=converged,logL.iter=logL.iter[-1], gamma = gamma, dgamma = dgamma)
 }
 
 }
@@ -385,7 +395,9 @@ else if (L>1)
 tmp.trans.update <- 0
 diff<-1
 logL.iter <- 0
-pK.new <- c(0.5,0.5)
+
+ptheta.new <- c(0.95,0.05)
+pnu.new <- c(0.5,0.5)
 
 while(diff>ptol && niter<maxiter)
 {
@@ -404,7 +416,6 @@ trans.par2.new[4] <- abs(trans.par2.new[4])
 
 tmp.trans.prob <- compute.A.nhmm (Z, trans.par1.new, trans.par2.new,dist.included=dist.included)
 pii.new <- tmp.trans.prob$pii
-pK.new <- c(0.5,0.5)
 A.new <- tmp.trans.prob$A
 
 pc.new<-rep(1, L)/L
@@ -446,7 +457,8 @@ niter<-niter+1
 trans.par1.old <- trans.par1.new
 trans.par2.old <- trans.par2.new
 pii.old<-pii.new
-pK.old<-pK.new
+ptheta.old<-ptheta.new
+pnu.old<-pnu.new
 A.old<-A.new
 pc.old <- pc.new
 f0.old<-f0.new
@@ -454,11 +466,11 @@ f1.old<-f1.new
 
 ## updating the weights and probabilities of hidden states
 
-forwardbackward.res <- forwardbackward(x, pii.old, pK.old, A.old, pc.old, f0.old, f1.old)
+forwardbackward.res <- forwardbackward(x, pii.old, pnu.old, A.old, pc.old, f0.old, f1.old)
 
 gamma <- forwardbackward.res$pr
 dgamma <- forwardbackward.res$ts
-K <- forwardbackward.res$pr2
+nu <- forwardbackward.res$pr2
 omega <- forwardbackward.res$wt
 c0 <- forwardbackward.res$rescale
 
@@ -469,7 +481,9 @@ tmp.trans.update <- try(update.trans.prob.nhmm(Z, dgamma, gamma, trans.par1.old,
 if(length(tmp.trans.update) > 2){
 
 pii.new <- tmp.trans.update$pii
-pK.new <- apply(K,2,sum)/sum(gamma[, 1])
+ptheta.new <- apply(gamma,2,sum)/NUM
+pnu.new[1] <- sum((x!=0) * gamma[, 1] * nu[,1])/sum((x!=0) * gamma[, 1])
+pnu.new[2] <- 1 - pnu.new[1]
 A.new <- tmp.trans.update$A
 trans.par1.new <- tmp.trans.update$trans.par1
 trans.par2.new <- tmp.trans.update$trans.par2
@@ -500,9 +514,9 @@ if(nulltype == 4)
 }
 if(nulltype == 5)
 {
-	q6bis <- sum( (K[,1] - gamma[, 1])*x^2)
-	sd0bis <- sqrt(q6/sum(K[,1] - gamma[, 1]))
-	f0.new <- c(0,1,-1,sd0)
+	q6bis <- sum( ((x!=0) * gamma[, 1] * nu[,1])*x^2)
+	sd0bis <- sqrt(q6bis/sum((x!=0) * gamma[, 1] * nu[,1]))
+	f0.new <- c(0,1,-1,sd0bis)
 }
 
 mus<-1:L
@@ -550,11 +564,11 @@ if (nulltype>0) {
 } else {
 	BIC <- logL - (3*L + npar.A)*log(NUM)/2 
 }
-em.var<-list(pii=pii.new, A=A.new, pc=pc.new, f0=f0.new, f1=f1.new, LIS=lfdr, logL=logL, BIC=BIC, ni=niter, trans.par1 = trans.par1.new, trans.par2 = trans.par2.new, converged=converged,logL.iter=logL.iter[-1], gamma = gamma, dgamma = dgamma)
+em.var<-list(ptheta = ptheta.new, pnu = pnu.new, pii=pii.new, A=A.new, pc=pc.new, f0=f0.new, f1=f1.new, LIS=lfdr, logL=logL, BIC=BIC, ni=niter, trans.par1 = trans.par1.new, trans.par2 = trans.par2.new, converged=converged,logL.iter=logL.iter[-1], gamma = gamma, dgamma = dgamma)
 } else {
  logL<- (-Inf)
  BIC<- logL<- (-Inf)
- em.var <- list(pii=pii.old, A=A.old, pc=pc.old, f0=f0.old, f1=f1.old, LIS=lfdr, logL=logL, BIC=BIC, ni=niter, trans.par1 = trans.par1.old, trans.par2 = trans.par2.old, converged=converged,logL.iter=logL.iter[-1], gamma = gamma, dgamma = dgamma)
+ em.var <- list(ptheta = ptheta.old, pnu = pnu.old, pii=pii.old, A=A.old, pc=pc.old, f0=f0.old, f1=f1.old, LIS=lfdr, logL=logL, BIC=BIC, ni=niter, trans.par1 = trans.par1.old, trans.par2 = trans.par2.old, converged=converged,logL.iter=logL.iter[-1], gamma = gamma, dgamma = dgamma)
 }
 
 }

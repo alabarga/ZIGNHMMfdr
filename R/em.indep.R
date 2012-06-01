@@ -47,7 +47,7 @@ if(nulltype >= 4)
 }
 
 ptheta.new <- c(0.95,0.05)
-pZ.new <- c(0.5,0.5)
+pnu.new <- c(0.5,0.5)
 
 diff<-1
 
@@ -59,22 +59,23 @@ while(diff>ptol && niter<maxiter)
 niter<-niter+1
 
 ptheta.old <- ptheta.new
-pZ.old <- pZ.new
+pnu.old <- pnu.new
 f0.old <- f0.new
 f1.old <- f1.new
 
 ## updating the weights and probabilities of hidden states
 
-forwardbackward.res <- forwardbackward1.indep.kernel(x, ptheta.old, pZ.old, f0.old, f1.old)
+forwardbackward.res <- forwardbackward1.indep.kernel(x, ptheta.old, pnu.old, f0.old, f1.old)
 
 gamma <- forwardbackward.res$pr
-Z <- forwardbackward.res$pr2
+nu <- forwardbackward.res$pr2
 c0 <- forwardbackward.res$rescale
 
 ## updating the parameter estimates
 
 ptheta.new <- apply(gamma,2,sum)/NUM
-pZ.new <- apply(Z,2,sum)/sum(gamma[, 1])
+pnu.new[1] <- sum((x!=0) * gamma[, 1] * nu[,1])/sum((x!=0) * gamma[, 1])
+pnu.new[2] <- 1 - pnu.new[1]
 
 q5 <- sum(gamma[, 1]*x)
 mu0 <- q5/sum(gamma[, 1])
@@ -100,8 +101,8 @@ if(nulltype == 4)
 }
 if(nulltype == 5)
 {
-	q6bis <- sum( (Z[,1] - gamma[, 1])*x^2)
-	sd0bis <- sqrt(q6/sum(Z[,1] - gamma[, 1]))
+	q6bis <- sum( ((x!=0) * gamma[, 1] * nu[,1])*x^2)
+	sd0bis <- sqrt(q6bis/sum((x!=0) * gamma[, 1] * nu[,1]))
 	f0.new <- c(0,1,-1,sd0bis)
 }
 
@@ -139,10 +140,10 @@ if (nulltype > 0) {
 	BIC <- logL-(3-2)*log(NUM)/2 
 }
 
- em.var<-list(ptheta=ptheta.new, f0=f0.new, f1=kern.f1, LIS=lfdr, logL=logL, BIC=BIC, ni=niter, converged=converged) 
+ em.var<-list(ptheta=ptheta.new, pnu = pnu.new, f0=f0.new, f1=kern.f1, LIS=lfdr, logL=logL, BIC=BIC, ni=niter, converged=converged) 
 } else {
  BIC<- logL<- (-Inf)
- em.var<-list(ptheta=ptheta.old, f0=f0.old, f1=kern.f1, LIS=lfdr, logL=logL, BIC=, ni=niter, converged=converged)
+ em.var<-list(ptheta=ptheta.old, pnu = pnu.old, f0=f0.old, f1=kern.f1, LIS=lfdr, logL=logL, BIC=, ni=niter, converged=converged)
 }
 
 }
@@ -184,7 +185,7 @@ if(nulltype == 5)
 
 f1.new<-c(2, 1)
 ptheta.new <- c(0.95,0.05)
-pZ.new <- c(0.5, 0.5)
+pnu.new <- c(0.5, 0.5)
 
 diff<-1
 
@@ -196,22 +197,23 @@ while(diff>ptol && niter<maxiter)
 niter<-niter+1
 
 ptheta.old <- ptheta.new
-pZ.old <- pZ.new
+pnu.old <- pnu.new
 f0.old <- f0.new
 f1.old <- f1.new
 
 ## updating the weights and probabilities of hidden states
 
-forwardbackward.res <- forwardbackward1.indep(x, ptheta.old, pZ.old, f0.old, f1.old)
+forwardbackward.res <- forwardbackward1.indep(x, ptheta.old, pnu.old, f0.old, f1.old)
 
 gamma <- forwardbackward.res$pr
-Z <- forwardbackward.res$pr2
+nu <- forwardbackward.res$pr2
 c0 <- forwardbackward.res$rescale
 
 ## updating the parameter estimates
 
 ptheta.new <- apply(gamma,2,sum)/NUM
-pZ.new <- apply(Z,2,sum)/sum(gamma[, 1])
+pnu.new[1] <- sum((x!=0) * gamma[, 1] * nu[,1])/sum((x!=0) * gamma[, 1])
+pnu.new[2] <- 1 - pnu.new[1]
 
 q5 <- sum(gamma[, 1]*x)
 mu0 <- q5/sum(gamma[, 1])
@@ -237,8 +239,8 @@ if(nulltype == 4)
 }
 if(nulltype == 5)
 {
-	q6bis <- sum( (Z[,1] - gamma[, 1])*x^2)
-	sd0bis <- sqrt(q6/sum(Z[,1] - gamma[, 1]))
+	q6bis <- sum( ((x!=0) * gamma[, 1] * nu[,1])*x^2)
+	sd0bis <- sqrt(q6bis/sum((x!=0) * gamma[, 1] * nu[,1]))
 	f0.new <- c(0,1,-1,sd0bis)
 }
 
@@ -268,10 +270,10 @@ if (nulltype > 0) {
 	BIC<-logL-(3*L)*log(NUM)/2 
 }
 
- em.var<-list(ptheta=ptheta.new, f0=f0.new, f1=f1.new, LIS=lfdr, logL=logL, BIC=BIC, ni=niter, converged=converged) 
+ em.var<-list(ptheta=ptheta.new, pnu = pnu.new, f0=f0.new, f1=f1.new, LIS=lfdr, logL=logL, BIC=BIC, ni=niter, converged=converged) 
 } else {
  BIC<- logL<- (-Inf)
- em.var<-list(ptheta=ptheta.old, f0=f0.old, f1=f1.old, LIS=lfdr, logL=logL, BIC=, ni=niter, converged=converged)
+ em.var<-list(ptheta=ptheta.old, pnu = pnu.old, f0=f0.old, f1=f1.old, LIS=lfdr, logL=logL, BIC=, ni=niter, converged=converged)
 }
 
 }
@@ -284,7 +286,7 @@ else if (L>1)
 {
 
 ptheta.new <- c(0.95, 0.05)
-pZ.new <- c(0.5, 0.5)
+pnu.new <- c(0.5, 0.5)
 pc.new <- rep(1, L)/L
 mus <- seq(from=-1, by=1.5, length=L)
 sds <- rep(1, L)
@@ -326,24 +328,25 @@ while(diff>ptol && niter<maxiter)
 niter <- niter+1
 
 ptheta.old <- ptheta.new
-pZ.old <- pZ.new
+pnu.old <- pnu.new
 pc.old <- pc.new
 f0.old <- f0.new
 f1.old <- f1.new
 
 ## updating the weights and probabilities of hidden states
 
-forwardbackward.res <- forwardbackward.indep(x, ptheta.old, pZ.old, pc.old, f0.old, f1.old)
+forwardbackward.res <- forwardbackward.indep(x, ptheta.old, pnu.old, pc.old, f0.old, f1.old)
 
 gamma <- forwardbackward.res$pr
-Z <- forwardbackward.res$pr2
+nu <- forwardbackward.res$pr2
 omega <- forwardbackward.res$wt
 c0 <- forwardbackward.res$rescale
 
 ## updating the parameter estimates
 
 ptheta.new <- apply(gamma,2,sum)/NUM
-pZ.new <- apply(Z,2,sum)/sum(gamma[, 1])
+pnu.new[1] <- sum((x!=0) * gamma[, 1] * nu[,1])/sum((x!=0) * gamma[, 1])
+pnu.new[2] <- 1 - pnu.new[1]
 
 q5 <- sum(gamma[, 1]*x)
 mu0 <- q5/sum(gamma[, 1])
@@ -369,8 +372,8 @@ if(nulltype == 4)
 }
 if(nulltype == 5)
 {
-	q6bis <- sum( (Z[,1] - gamma[, 1])*x^2)
-	sd0bis <- sqrt(q6/sum(Z[,1] - gamma[, 1]))
+	q6bis <- sum( ((x!=0) * gamma[, 1] * nu[,1])*x^2)
+	sd0bis <- sqrt(q6bis/sum((x!=0) * gamma[, 1] * nu[,1]))
 	f0.new <- c(0,1,-1,sd0bis)
 }
 
@@ -413,11 +416,11 @@ if (nulltype > 0) {
 } else {
 	BIC <- logL-(3*L)*log(NUM)/2 
 }
- em.var<-list(ptheta=ptheta.new, pc=pc.new, f0=f0.new, f1=f1.new, LIS=lfdr, logL=logL, BIC=BIC, ni=niter, converged=converged) 
+ em.var<-list(ptheta=ptheta.new, pnu = pnu.new, pc=pc.new, f0=f0.new, f1=f1.new, LIS=lfdr, logL=logL, BIC=BIC, ni=niter, converged=converged) 
 } else {
  logL <- (-Inf)
  BIC <- logL<- (-Inf)
- em.var <-list(ptheta=ptheta.old, pc=pc.old, f0=f0.old, f1=f1.old, LIS=lfdr, logL=logL, BIC=BIC, ni=niter, converged=converged)
+ em.var <-list(ptheta=ptheta.old, pnu = pnu.old, pc=pc.old, f0=f0.old, f1=f1.old, LIS=lfdr, logL=logL, BIC=BIC, ni=niter, converged=converged)
 }
 
 }
