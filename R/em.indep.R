@@ -36,7 +36,7 @@ if(nulltype == 4)
 }
 if(nulltype == 5)
 {
-	f0.new <- c(0,1,-1,0.5)
+	f0.new <- c(0,1,-1,0.2)
 }
 
 f1.new <- 0.5*dnorm(x,2,1)+0.5*dnorm(x,-2,1)
@@ -74,7 +74,7 @@ c0 <- forwardbackward.res$rescale
 ## updating the parameter estimates
 
 ptheta.new <- apply(gamma,2,sum)/NUM
-pnu.new[1] <- sum((x!=0) * gamma[, 1] * nu[,1])/sum((x!=0) * gamma[, 1])
+pnu.new[1] <- sum(gamma[, 1] * nu[,1])/sum(gamma[, 1])
 pnu.new[2] <- 1 - pnu.new[1]
 
 q5 <- sum(gamma[, 1]*x)
@@ -101,8 +101,8 @@ if(nulltype == 4)
 }
 if(nulltype == 5)
 {
-	q6bis <- sum( ((x!=0) * gamma[, 1] * nu[,1])*x^2)
-	sd0bis <- sqrt(q6bis/sum((x!=0) * gamma[, 1] * nu[,1]))
+	q6bis <- sum( gamma[, 1] * nu[,1] * x^2)
+	sd0bis <- sqrt(q6bis/sum(gamma[, 1] * nu[,1]))
 	f0.new <- c(0,1,-1,sd0bis)
 }
 
@@ -180,7 +180,7 @@ if(nulltype == 4)
 }
 if(nulltype == 5)
 {
-	f0.new <- c(0,1,-1,0.5)
+	f0.new <- c(0,1,-1,0.2)
 }
 
 f1.new<-c(2, 1)
@@ -212,7 +212,7 @@ c0 <- forwardbackward.res$rescale
 ## updating the parameter estimates
 
 ptheta.new <- apply(gamma,2,sum)/NUM
-pnu.new[1] <- sum((x!=0) * gamma[, 1] * nu[,1])/sum((x!=0) * gamma[, 1])
+pnu.new[1] <- sum(gamma[, 1] * nu[,1])/sum(gamma[, 1])
 pnu.new[2] <- 1 - pnu.new[1]
 
 q5 <- sum(gamma[, 1]*x)
@@ -239,8 +239,8 @@ if(nulltype == 4)
 }
 if(nulltype == 5)
 {
-	q6bis <- sum( ((x!=0) * gamma[, 1] * nu[,1])*x^2)
-	sd0bis <- sqrt(q6bis/sum((x!=0) * gamma[, 1] * nu[,1]))
+	q6bis <- sum( gamma[, 1] * nu[,1] * x^2)
+	sd0bis <- sqrt(q6bis/sum(gamma[, 1] * nu[,1]))
 	f0.new <- c(0,1,-1,sd0bis)
 }
 
@@ -313,7 +313,7 @@ if(nulltype == 4)
 }
 if(nulltype == 5)
 {
-	f0.new <- c(0,1,-1,0.5)
+	f0.new <- c(0,1,-1,0.2)
 }
 
 f1.new<-cbind(mus, sds)
@@ -345,7 +345,7 @@ c0 <- forwardbackward.res$rescale
 ## updating the parameter estimates
 
 ptheta.new <- apply(gamma,2,sum)/NUM
-pnu.new[1] <- sum((x!=0) * gamma[, 1] * nu[,1])/sum((x!=0) * gamma[, 1])
+pnu.new[1] <- sum(gamma[, 1] * nu[,1])/sum(gamma[, 1])
 pnu.new[2] <- 1 - pnu.new[1]
 
 q5 <- sum(gamma[, 1]*x)
@@ -372,8 +372,8 @@ if(nulltype == 4)
 }
 if(nulltype == 5)
 {
-	q6bis <- sum( ((x!=0) * gamma[, 1] * nu[,1])*x^2)
-	sd0bis <- sqrt(q6bis/sum((x!=0) * gamma[, 1] * nu[,1]))
+	q6bis <- sum( gamma[, 1] * nu[,1] * x^2)
+	sd0bis <- sqrt(q6bis/sum(gamma[, 1] * nu[,1]))
 	f0.new <- c(0,1,-1,sd0bis)
 }
 

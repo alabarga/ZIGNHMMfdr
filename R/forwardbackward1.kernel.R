@@ -80,6 +80,7 @@ if(length(f0) == 4)
 {
 	Z[,1] <- pZ[1]*dnorm(x, f0[1], f0[2])/ ( pZ[1] * dnorm(x, f0[1], f0[2]) + (1-pZ[1]) * dnorm(x, f0[1], f0[4]))
 	Z[,2] <- (1 - Z[,1])
+	Z[x==0] <- 0
 }
 
 forwardbackward.var<-list(bw=alpha, fw=beta, lf=lfdr, pr=gamma, pr2=Z, ts=dgamma, rescale=c0)
