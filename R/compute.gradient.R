@@ -1,6 +1,6 @@
 compute.gradient <-
 function(Z, dgamma, gamma, trans.par1, trans.par2, dist.included=TRUE){
-
+	
 	gradient <- rep(0,3+dim(Z)[2])
 
 	tmp.trans.prob <- compute.A.nhmm(Z, trans.par1, trans.par2, dist.included=dist.included)

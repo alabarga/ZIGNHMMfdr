@@ -1,6 +1,6 @@
 find.nu <-
 function(Z, dgamma, gamma, delta1, delta2, trans.par1, trans.par2, dist.included=TRUE){
-
+	
 	p <- dim(Z)[2]
 	# delta1 = (lambda1_H, sigma11_H, sigma21_H, rho1_H)
 	delta_H <- array(0,c(2,2,c(dim(Z)[1]-1)))

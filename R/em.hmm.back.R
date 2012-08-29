@@ -1,5 +1,5 @@
-em.indep <-
-function(x, alttype='mixnormal', L=2, maxiter=1000, nulltype = 2, symmetric = FALSE)
+em.hmm.back <-
+function(x, alttype='mixnormal', L=2, maxiter=1000, nulltype=2, symmetric = FALSE)
 {
 
 	NUM<-length(x)
@@ -11,10 +11,17 @@ function(x, alttype='mixnormal', L=2, maxiter=1000, nulltype = 2, symmetric = FA
 	converged=TRUE
 
 	### initializing model parameters
+
 	if(alttype == 'kernel'){
 
-	f0.new<-c(2, 1)
+	### initializing model parameters
 
+	pii.new <- c(0.95, 0.05)
+	ptheta.new <- c(0.95,0.05)
+	pnu.new <- c(0.5,0.5)
+	A.new <- array(c(0.95, 0.05, 0.05, 0.95),c(2,2,NUM - 1))
+
+	f0.new<-c(0, 1)
 	locfdr_p0 <- 0
 	if(nulltype == 0){
 		f0.new <- c(0,1)
@@ -40,38 +47,52 @@ function(x, alttype='mixnormal', L=2, maxiter=1000, nulltype = 2, symmetric = FA
 	}
 
 	f1.new <- 0.5*dnorm(x,2,1)+0.5*dnorm(x,-2,1)
-
 	if(nulltype >= 4)
 	{
 		f1.new[x == 0] = 0
 	}
-
-	ptheta.new <- c(0.95,0.05)
-	pnu.new <- c(0.5,0.5)
-
 	diff<-1
 
 	### The E-M Algorithm
 
 	while(diff>ptol && niter<maxiter)
-		{
+	{
 
 		niter<-niter+1
 
-		ptheta.old <- ptheta.new
+		pii.old <- pii.new
+		ptheta.old<-ptheta.new
 		pnu.old <- pnu.new
+		A.old <- A.new
 		f0.old <- f0.new
 		f1.old <- f1.new
 
 		## updating the weights and probabilities of hidden states
 
-		forwardbackward.res <- forwardbackward1.indep.kernel(x, ptheta.old, pnu.old, f0.old, f1.old)
+		forwardbackward.res <- forwardbackward1.kernel(x, pii.old, pnu.old, A.old, f0.old, f1.old)
 
 		gamma <- forwardbackward.res$pr
 		nu <- forwardbackward.res$pr2
+		dgamma <- forwardbackward.res$ts
 		c0 <- forwardbackward.res$rescale
 
 		## updating the parameter estimates
+
+		for (i in 0:1)
+		{
+			pii.new[i+1] <- gamma[1, i+1]
+		}
+
+
+		for (i in 0:1)
+		{
+			for (j in 0:1)
+			{ 
+				q1 <- sum(dgamma[i+1, j+1, ])
+				q2 <- sum(gamma[1:(NUM-1), i+1])
+				A.new[i+1, j+1,] <- q1/q2  
+			}
+		}
 
 		ptheta.new <- apply(gamma,2,sum)/NUM
 		pnu.new[1] <- sum(gamma[, 1] * nu[,1])/sum(gamma[, 1])
@@ -104,6 +125,7 @@ function(x, alttype='mixnormal', L=2, maxiter=1000, nulltype = 2, symmetric = FA
 			q6bis <- sum( gamma[, 1] * nu[,1] * x^2)
 			sd0bis <- sqrt(q6bis/sum(gamma[, 1] * nu[,1]))
 			f0.new <- c(0,1,-1,sd0bis)
+			f0.new <- c(0,1,-1,0.2)
 		}
 
 		if(symmetric == FALSE){
@@ -115,14 +137,14 @@ function(x, alttype='mixnormal', L=2, maxiter=1000, nulltype = 2, symmetric = FA
 			kern.f1 <- density(c(x,2*f0.new[1]-x),weights=c(gamma[,2],gamma[,2])/sum(c(gamma[,2],gamma[,2])))
 			f1.new <- approx(kern.f1$x, kern.f1$y, x, rule = 2, ties="ordered")$y
 		}
-
 		if(nulltype >= 4)
 		{
 			f1.new[x == 0] = 0
 		}
 
-		df2 <- abs(f1.old-f1.new)
-		diff <- max(df2)
+		df1<-abs(A.old-A.new)
+		df2<-abs(f1.old-f1.new)
+		diff<-max(df1, df2)
 
 		if (is.na(diff)) {
 			converged=FALSE;
@@ -131,34 +153,35 @@ function(x, alttype='mixnormal', L=2, maxiter=1000, nulltype = 2, symmetric = FA
 
 	}
 
-	lfdr <- gamma[, 1]
+	lfdr<-gamma[, 1]
 	if (converged) {
-		logL<- sum(log(c0))
+		logL<--sum(log(c0))
 		if (nulltype > 0) {
-			BIC <- logL-(3+2-2)*log(NUM)/2 
+			BIC<-logL-(3+4-2)*log(NUM)/2 
 		} else {
-			BIC <- logL-(3-2)*log(NUM)/2 
+			BIC<-logL-(3+2-2)*log(NUM)/2 
 		}
-
-		em.var<-list(ptheta=ptheta.new, pnu = pnu.new, f0=f0.new, f1=kern.f1, LIS=lfdr, logL=logL, BIC=BIC, ni=niter, converged=converged) 
+		em.var <- list(ptheta = ptheta.new, pnu = pnu.new, pii=pii.new, A=A.new[,,1], f0=f0.new, f1= kern.f1, LIS=lfdr, logL=logL, BIC=BIC, ni=niter, converged=converged, gamma = gamma, dgamma = dgamma) 
 	} else {
-		BIC<- logL<- (-Inf)
-		em.var<-list(ptheta=ptheta.old, pnu = pnu.old, f0=f0.old, f1=kern.f1, LIS=lfdr, logL=logL, BIC=, ni=niter, converged=converged)
+		BIC <- logL <- (-Inf)
+		em.var <- list(ptheta = ptheta.old, pnu = pnu.old, pii=pii.old, A=A.old[,,1], f0=f0.old, f1= kern.f1, LIS=lfdr, logL=logL, BIC=, ni=niter, converged=converged, gamma = gamma, dgamma = dgamma)
 	}
-
 	}
 
 	if(alttype == 'mixnormal'){
-
-		########
-		# L=1
-		########
+	########
+	# L=1
+	########
 
 		if (L==1)
 		{
 
-			f0.new<-c(2, 1)
+			pii.new <- c(0.95, 0.05)
+			ptheta.new<-c(0.95,0.05)
+			pnu.new <- c(0.5,0.5)
+			A.new <- array(c(0.95, 0.05, 0.05, 0.95),c(2,2,NUM - 1))
 
+			f0.new<-c(0, 1)
 			locfdr_p0 <- 0
 			if(nulltype == 0){
 				f0.new <- c(0,1)
@@ -183,9 +206,7 @@ function(x, alttype='mixnormal', L=2, maxiter=1000, nulltype = 2, symmetric = FA
 				f0.new <- c(0,1,-1,0.2)
 			}
 
-			f1.new<-c(2, 1)
-			ptheta.new <- c(0.95,0.05)
-			pnu.new <- c(0.5, 0.5)
+			f1.new <- c(2, 1)
 
 			diff<-1
 
@@ -196,20 +217,39 @@ function(x, alttype='mixnormal', L=2, maxiter=1000, nulltype = 2, symmetric = FA
 
 				niter<-niter+1
 
-				ptheta.old <- ptheta.new
+				pii.old <- pii.new
+				ptheta.old<-ptheta.new
 				pnu.old <- pnu.new
+				A.old <- A.new
 				f0.old <- f0.new
 				f1.old <- f1.new
 
 				## updating the weights and probabilities of hidden states
 
-				forwardbackward.res <- forwardbackward1.indep(x, ptheta.old, pnu.old, f0.old, f1.old)
+				forwardbackward.res <- forwardbackward1(x, pii.old, pnu.old, A.old, f0.old, f1.old)
 
 				gamma <- forwardbackward.res$pr
 				nu <- forwardbackward.res$pr2
+				dgamma <- forwardbackward.res$ts
 				c0 <- forwardbackward.res$rescale
 
 				## updating the parameter estimates
+
+				for (i in 0:1)
+				{
+					pii.new[i+1] <- gamma[1, i+1]
+				}
+
+
+				for (i in 0:1)
+				{
+					for (j in 0:1)
+					{ 
+						q1 <- sum(dgamma[i+1, j+1, ])
+						q2 <- sum(gamma[1:(NUM-1), i+1])
+						A.new[i+1, j+1,] <- q1/q2  
+					}
+				}
 
 				ptheta.new <- apply(gamma,2,sum)/NUM
 				pnu.new[1] <- sum(gamma[, 1] * nu[,1])/sum(gamma[, 1])
@@ -242,6 +282,7 @@ function(x, alttype='mixnormal', L=2, maxiter=1000, nulltype = 2, symmetric = FA
 					q6bis <- sum( gamma[, 1] * nu[,1] * x^2)
 					sd0bis <- sqrt(q6bis/sum(gamma[, 1] * nu[,1]))
 					f0.new <- c(0,1,-1,sd0bis)
+					f0.new <- c(0,1,-1,0.2)
 				}
 
 				q1 <- sum(gamma[, 2])
@@ -251,8 +292,9 @@ function(x, alttype='mixnormal', L=2, maxiter=1000, nulltype = 2, symmetric = FA
 				sd1 <- sqrt(q3/q1)
 				f1.new <- c(mu1, sd1)
 
-				df2 <- abs(f1.old-f1.new)
-				diff <- max(df2)
+				df1<-abs(A.old-A.new)
+				df2<-abs(f1.old-f1.new)
+				diff<-max(df1, df2)
 
 				if (is.na(diff)) {
 					converged=FALSE;
@@ -261,19 +303,19 @@ function(x, alttype='mixnormal', L=2, maxiter=1000, nulltype = 2, symmetric = FA
 
 			}
 
-			lfdr <- gamma[, 1]
+			lfdr<-gamma[, 1]
 			if (converged) {
-				logL<- sum(log(c0))
+				logL<--sum(log(c0))
 				if (nulltype > 0) {
-					BIC<-logL-(3*L+2)*log(NUM)/2 
+					BIC<-logL-(3*L+4)*log(NUM)/2 
 				} else {
-					BIC<-logL-(3*L)*log(NUM)/2 
+					BIC<-logL-(3*L+2)*log(NUM)/2 
 				}
 
-				em.var<-list(ptheta=ptheta.new, pnu = pnu.new, f0=f0.new, f1=f1.new, LIS=lfdr, logL=logL, BIC=BIC, ni=niter, converged=converged) 
+				em.var <- list(ptheta = ptheta.new, pnu = pnu.new, pii=pii.new, A=A.new[,,1], f0=f0.new, f1=f1.new, LIS=lfdr, logL=logL, BIC=BIC, ni=niter, converged=converged, gamma = gamma, dgamma = dgamma) 
 			} else {
-				BIC<- logL<- (-Inf)
-				em.var<-list(ptheta=ptheta.old, pnu = pnu.old, f0=f0.old, f1=f1.old, LIS=lfdr, logL=logL, BIC=, ni=niter, converged=converged)
+				BIC <- logL <- (-Inf)
+				em.var <- list(ptheta = ptheta.old, pnu = pnu.old, pii=pii.old, A=A.old[,,1], f0=f0.old, f1=f1.old, LIS=lfdr, logL=logL, BIC=, ni=niter, converged=converged, gamma = gamma, dgamma = dgamma)
 			}
 
 		}
@@ -285,13 +327,12 @@ function(x, alttype='mixnormal', L=2, maxiter=1000, nulltype = 2, symmetric = FA
 		else if (L>1)
 		{
 
-			ptheta.new <- c(0.95, 0.05)
-			pnu.new <- c(0.5, 0.5)
-			pc.new <- rep(1, L)/L
-			mus <- seq(from=-1, by=1.5, length=L)
-			sds <- rep(1, L)
-			f0.new <- c(2, 1)
+			pii.new<-c(0.95, 0.05)
+			ptheta.new<-c(0.95,0.05)
+			pnu.new <- c(0.5,0.5)
+			A.new <- array(c(0.95, 0.5, 0.05, 0.5),c(2,2,NUM - 1))
 
+			f0.new<-c(0, 1)
 			locfdr_p0 <- 0
 			if(nulltype == 0){
 				f0.new <- c(0,1)
@@ -316,9 +357,12 @@ function(x, alttype='mixnormal', L=2, maxiter=1000, nulltype = 2, symmetric = FA
 				f0.new <- c(0,1,-1,0.2)
 			}
 
-			f1.new<-cbind(mus, sds)
+			pc.new <- rep(1, L)/L
+			mus <- seq(from=-1, by=1.5, length=L)
+			sds <- rep(1, L)
+			f1.new <- cbind(mus, sds)
 
-			diff<-1
+			diff <- 1
 
 			### The E-M Algorithm
 
@@ -327,22 +371,41 @@ function(x, alttype='mixnormal', L=2, maxiter=1000, nulltype = 2, symmetric = FA
 
 				niter <- niter+1
 
+				pii.old <- pii.new
 				ptheta.old <- ptheta.new
 				pnu.old <- pnu.new
+				A.old <- A.new
 				pc.old <- pc.new
 				f0.old <- f0.new
 				f1.old <- f1.new
 
 				## updating the weights and probabilities of hidden states
 
-				forwardbackward.res <- forwardbackward.indep(x, ptheta.old, pnu.old, pc.old, f0.old, f1.old)
+				forwardbackward.res <- forwardbackward(x, pii.old, pnu.old, A.old, pc.old, f0.old, f1.old)
 
 				gamma <- forwardbackward.res$pr
 				nu <- forwardbackward.res$pr2
+				dgamma <- forwardbackward.res$ts
 				omega <- forwardbackward.res$wt
 				c0 <- forwardbackward.res$rescale
 
 				## updating the parameter estimates
+
+				for (i in 0:1)
+				{
+					pii.new[i+1] <- gamma[1, i+1]
+				}
+
+
+				for (i in 0:1)
+				{
+					for (j in 0:1)
+					{ 
+						q1 <- sum(dgamma[i+1, j+1, ])
+						q2 <- sum(gamma[1:(NUM-1), i+1])
+						A.new[i+1, j+1,] <- q1/q2  
+					}
+				}
 
 				ptheta.new <- apply(gamma,2,sum)/NUM
 				pnu.new[1] <- sum(gamma[, 1] * nu[,1])/sum(gamma[, 1])
@@ -354,7 +417,7 @@ function(x, alttype='mixnormal', L=2, maxiter=1000, nulltype = 2, symmetric = FA
 				q6 <- sum(gamma[, 1]*(x-mu0)*(x-mu0))
 				sd0 <- sqrt(q6/sum(gamma[, 1]))
 
-				f0.new <- c(mu0, sd0)
+				f0.new<-c(mu0, sd0)
 
 				if(nulltype == 0){
 					f0.new <- c(0,1)
@@ -375,18 +438,18 @@ function(x, alttype='mixnormal', L=2, maxiter=1000, nulltype = 2, symmetric = FA
 					q6bis <- sum( gamma[, 1] * nu[,1] * x^2)
 					sd0bis <- sqrt(q6bis/sum(gamma[, 1] * nu[,1]))
 					f0.new <- c(0,1,-1,sd0bis)
+					f0.new <- c(0,1,-1,0.2)
 				}
-
 
 				mus <- 1:L
 				sds <- 1:L
 
 				for (c in 1:L)
 				{
-
 					q1 <- sum(omega[, c])
 					q2 <- sum(gamma[, 2])
 					pc.new[c] <- q1/q2
+
 
 					q3 <- sum(omega[, c]*x)
 					mus[c] <- q3/q1
@@ -398,8 +461,9 @@ function(x, alttype='mixnormal', L=2, maxiter=1000, nulltype = 2, symmetric = FA
 
 				f1.new <- cbind(mus, sds)
 
+				df1 <- abs(A.old-A.new)
 				df2 <- abs(f1.old-f1.new)
-				diff <- max(df2)
+				diff <- max(df1, df2)
 
 				if (is.na(diff)) {
 					converged=FALSE;
@@ -408,19 +472,19 @@ function(x, alttype='mixnormal', L=2, maxiter=1000, nulltype = 2, symmetric = FA
 
 			}
 
-			lfdr <- gamma[, 1]
+			lfdr<-gamma[, 1]
 			if (converged) {
-				logL <- sum(log(c0))
+				logL <- -sum(log(c0))
 				if (nulltype > 0) {
-					BIC <- logL-(3*L+2)*log(NUM)/2 
+					BIC<-logL-(3*L+4)*log(NUM)/2 
 				} else {
-					BIC <- logL-(3*L)*log(NUM)/2 
+					BIC<-logL-(3*L+2)*log(NUM)/2 
 				}
-				em.var<-list(ptheta=ptheta.new, pnu = pnu.new, pc=pc.new, f0=f0.new, f1=f1.new, LIS=lfdr, logL=logL, BIC=BIC, ni=niter, converged=converged) 
+				em.var <- list(ptheta = ptheta.new, pnu = pnu.new, pii=pii.new, A=A.new[,,1], pc=pc.new, f0=f0.new, f1=f1.new, LIS=lfdr, logL=logL, BIC=BIC, ni=niter, converged=converged, gamma = gamma, dgamma = dgamma) 
 			} else {
 				logL <- (-Inf)
-				BIC <- logL<- (-Inf)
-				em.var <-list(ptheta=ptheta.old, pnu = pnu.old, pc=pc.old, f0=f0.old, f1=f1.old, LIS=lfdr, logL=logL, BIC=BIC, ni=niter, converged=converged)
+				BIC <- logL <- (-Inf)
+				em.var <- list(ptheta = ptheta.old, pnu = pnu.old, pii=pii.old, A=A.old[,,1], pc=pc.old, f0=f0.old, f1=f1.old, LIS=lfdr, logL=logL, BIC=BIC, ni=niter, converged=converged, gamma = gamma, dgamma = dgamma)
 			}
 
 		}

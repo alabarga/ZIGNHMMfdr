@@ -1,5 +1,5 @@
 forwardbackward <-
-function(x, pii, pZ, A, pc, f0, f1)
+function(x, pii, A, pc, f0, f1)
 {
 
 NUM<-length(x)
@@ -14,14 +14,7 @@ if(length(f0) < 3)
 }
 else
 {
-	if(length(f0) == 3)
-	{
-		f0x<- delta * (x==0) + (1-delta)*dnorm(x, f0[1], f0[2]) * (x!=0)
-	}
-	if(length(f0) == 4)
-	{
-		f0x<- delta * (x==0) + (1-delta)* ( pZ[1] * dnorm(x, f0[1], f0[2]) + pZ[2] * dnorm(x, f0[1], f0[4])) * (x!=0)
-	}
+	f0x<- delta * (x==0) + (1-delta)*dnorm(x, f0[1], f0[2]) * (x!=0)
 }
 
 f1x<-rep(0, NUM)
@@ -88,16 +81,7 @@ for (c in 1:L)
 	}
 }
 
-Z<-matrix(1:(NUM*2), NUM, 2, byrow=TRUE)
-
-if(length(f0) == 4)
-{
-	Z[,1] <- pZ[1]*dnorm(x, f0[1], f0[2])/ ( pZ[1] * dnorm(x, f0[1], f0[2]) + (1-pZ[1]) * dnorm(x, f0[1], f0[4]))
-	Z[,2] <- (1 - Z[,1])
-	Z[x==0] <- 0
-}
-
-forwardbackward.var<-list(bw=alpha, fw=beta, lf=lfdr, pr=gamma, pr2=Z, ts=dgamma, wt=omega, rescale=c0)
+forwardbackward.var<-list(bw=alpha, fw=beta, lf=lfdr, pr=gamma, ts=dgamma, wt=omega, rescale=c0)
 return(forwardbackward.var)
   
 }

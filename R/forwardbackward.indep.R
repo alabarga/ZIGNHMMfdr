@@ -1,5 +1,5 @@
 forwardbackward.indep <-
-function(x, ptheta, pZ, pc, f0, f1)
+function(x, ptheta, pc, f0, f1)
 {
 
 
@@ -44,15 +44,6 @@ gamma<-matrix(1:(NUM*2), NUM, 2, byrow=TRUE)
 gamma[,1] <- ptheta[1]*f0x/(ptheta[1]*f0x + ptheta[2]*f1x)
 gamma[,2] <- 1 - gamma[,1]
 
-Z<-matrix(1:(NUM*2), NUM, 2, byrow=TRUE)
-
-if(length(f0) == 4)
-{
-	Z[,1] <- pZ[1]*dnorm(x, f0[1], f0[2])/ ( pZ[1] * dnorm(x, f0[1], f0[2]) + (1-pZ[1]) * dnorm(x, f0[1], f0[4]))
-	Z[,2] <- (1 - Z[,1])
-	Z[x==0] <- 0
-}
-
 lfdr <- gamma[,1]
 omega<-matrix(rep(0, NUM*L), NUM, L, byrow=TRUE)
 
@@ -69,7 +60,7 @@ for (c in 1:L)
 
 c0 <- f0x*ptheta[1] + f1x*ptheta[2]
 
-forwardbackward.var <- list(lf=lfdr, pr=gamma, pr2=Z, wt=omega,rescale=c0)
+forwardbackward.var <- list(lf=lfdr, pr=gamma, wt=omega,rescale=c0)
 return(forwardbackward.var)
   
 }
