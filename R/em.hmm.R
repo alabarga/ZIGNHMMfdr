@@ -82,7 +82,7 @@ em.hmm.seed = function(x, alttype="mixnormal", L=2, nulltype=2, symmetric= FALSE
 {
 	NUM = length(x)
 	ptol = 1e-2
-	diff = 1
+	difference = 1
 	converged=TRUE
 	niter = 0
 	logL.iter = c()
@@ -92,7 +92,7 @@ em.hmm.seed = function(x, alttype="mixnormal", L=2, nulltype=2, symmetric= FALSE
 	Mvar = em.hmm.M(x, Evar, alttype, L, nulltype, symmetric)
 	Mvar.old = Mvar
 	
-	while(diff>ptol && niter <= 10)
+	while(difference>ptol && niter <= 10)
 	{
 		Evar     = em.hmm.E(x, Mvar, alttype, L)
 		Mvar     = em.hmm.M(x, Evar, alttype, L, nulltype, symmetric)
@@ -101,9 +101,9 @@ em.hmm.seed = function(x, alttype="mixnormal", L=2, nulltype=2, symmetric= FALSE
 		
 		df1 = abs(Mvar.old$A - Mvar$A)
 		df2 = abs(Mvar.old$f1 - Mvar$f1)
-		diff = max(df1, df2)
+		difference = max(df1, df2)
 		
-		if (is.na(diff)) {
+		if (is.na(difference)) {
 			print("Error in EM")
 			converged=FALSE;
 			break;

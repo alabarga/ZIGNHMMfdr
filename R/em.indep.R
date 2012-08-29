@@ -49,11 +49,11 @@ function(x, alttype='mixnormal', L=2, maxiter=1000, nulltype = 2, symmetric = FA
 	ptheta.new <- c(0.95,0.05)
 	pnu.new <- c(0.5,0.5)
 
-	diff<-1
+	difference<-1
 
 	### The E-M Algorithm
 
-	while(diff>ptol && niter<maxiter)
+	while(difference>ptol && niter<maxiter)
 		{
 
 		niter<-niter+1
@@ -122,9 +122,9 @@ function(x, alttype='mixnormal', L=2, maxiter=1000, nulltype = 2, symmetric = FA
 		}
 
 		df2 <- abs(f1.old-f1.new)
-		diff <- max(df2)
+		difference <- max(df2)
 
-		if (is.na(diff)) {
+		if (is.na(difference)) {
 			converged=FALSE;
 			break;
 		}
@@ -187,11 +187,11 @@ function(x, alttype='mixnormal', L=2, maxiter=1000, nulltype = 2, symmetric = FA
 			ptheta.new <- c(0.95,0.05)
 			pnu.new <- c(0.5, 0.5)
 
-			diff<-1
+			difference<-1
 
 			### The E-M Algorithm
 
-			while(diff>ptol && niter<maxiter)
+			while(difference>ptol && niter<maxiter)
 			{
 
 				niter<-niter+1
@@ -252,9 +252,9 @@ function(x, alttype='mixnormal', L=2, maxiter=1000, nulltype = 2, symmetric = FA
 				f1.new <- c(mu1, sd1)
 
 				df2 <- abs(f1.old-f1.new)
-				diff <- max(df2)
+				difference <- max(df2)
 
-				if (is.na(diff)) {
+				if (is.na(difference)) {
 					converged=FALSE;
 					break;
 				}
@@ -318,11 +318,11 @@ function(x, alttype='mixnormal', L=2, maxiter=1000, nulltype = 2, symmetric = FA
 
 			f1.new<-cbind(mus, sds)
 
-			diff<-1
+			difference<-1
 
 			### The E-M Algorithm
 
-			while(diff>ptol && niter<maxiter)
+			while(difference>ptol && niter<maxiter)
 			{
 
 				niter <- niter+1
@@ -399,9 +399,9 @@ function(x, alttype='mixnormal', L=2, maxiter=1000, nulltype = 2, symmetric = FA
 				f1.new <- cbind(mus, sds)
 
 				df2 <- abs(f1.old-f1.new)
-				diff <- max(df2)
+				difference <- max(df2)
 
-				if (is.na(diff)) {
+				if (is.na(difference)) {
 					converged=FALSE;
 					break;
 				}

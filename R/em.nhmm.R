@@ -34,7 +34,7 @@ em.nhmm = function(x, Z, dist, dist.included=TRUE, alttype='mixnormal', L=2, max
 	logL.iter = Mvar$logL.iter
 	Mvar.old = Mvar
 	print("ok")
-	while(diff > ptol && niter<maxiter)
+	while(difference > ptol && niter<maxiter)
 	{
 		niter = niter + 1
 		
