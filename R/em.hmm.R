@@ -122,38 +122,43 @@ em.hmm.seed = function(x, alttype="mixnormal", L=2, nulltype=2, symmetric= FALSE
 	return(list(pii=Mvar$pii, ptheta = Mvar$ptheta, pc=Mvar$pc, A=Mvar$A, f0=Mvar$f0, f1=Mvar$f1, logL.iter = logL.iter, logL = logL))
 }
 
-em.hmm.init = function(NUM, a11, a22, L = 2)
+em.hmm.init = function(NUM, A11, A22, L = 2)
 {
-	a  =  array(0,c(2,2, NUM-1))
-	a_11 = 1
-	a_22 = 1
-	while(a_11 == 1 | a_11 == 0 | a_22 == 1 | a_22 == 0)
-	{
-		a_11 = rbeta(1, a11, 1-a11)
-		a_22 = rbeta(1, a22, 1-a22)
-	}
-	a[1,1,] = a_11
-	a[1,2,] = 1 - a[1,1,1]
-	a[2,2,] = a_22
-	a[2,1,] = 1 - a[2,2,1]
+	print("init")
+	NUM = length(x)
 	
-	gamma = matrix(rep(0, NUM*2), NUM, 2, byrow=TRUE)
-	omega = matrix(rep(0, NUM*L), NUM, L, byrow=TRUE)
+	A         = array(0,c(2,2, NUM-1))
+	trans.par = array(0,c(2,3+dim(Z)[2]))
 	
-	while(sum(is.na(gamma[,1]))>0)
+	tmp = NA
+	while(sum(is.na(tmp))>0 & length(tmp) == 1)
 	{
-		gamma[,1] = inverse.rle( list(values=rep(1:2,NUM) ,lengths=1+rgeom( 2*NUM, rep( c( a[1,2,1], a[2,1,1] ), NUM) )))[1:NUM] - 1
+		A_11 = 1
+		A_22 = 1
+		while(A_11 + 1e-4 >= 1 | A_11 - 1e-4 <= 0 | A_22 + 1e-4 >= 1 | A_22 - 1e-4 <= 0)
+		{
+			A_11 = rbeta(1, A11, 1-A11)
+			A_22 = rbeta(1, A22, 1-A22)
+		}
+		A[1,1,] = A_11
+		A[1,2,] = 1 - A[1,1,1]
+		A[2,2,] = A_22
+		A[2,1,] = 1 - A[2,2,1]
+		tmp = try(inverse.rle( list(values=rep(1:2,NUM) ,lengths=1+rgeom( 2*NUM, rep( c( A[1,2,1], A[2,1,1] ), NUM) )))[1:NUM] - 1)
 	}
+	gamma = matrix(rep(NA, NUM*2), NUM, 2, byrow=TRUE)
+	gamma[,1] = tmp
 	gamma[,2] = 1-gamma[,1]
+	dgamma    = array(0,c(2,2, NUM-1))
 	
-	gamma[(gamma[,1] == 1),1] = 0.9
-	gamma[(gamma[,1] == 0),1] = 0.1
-	gamma[(gamma[,2] == 1),2] = 0.9
-	gamma[(gamma[,2] == 0),2] = 0.1
+	dgamma[1,1,] = as.numeric(gamma[-dim(gamma)[1],2] == 0 & gamma[-1,1] == 0)
+	dgamma[2,1,] = as.numeric(gamma[-dim(gamma)[1],2] == 1 & gamma[-1,1] == 0)
+	dgamma[1,2,] = as.numeric(gamma[-dim(gamma)[1],2] == 0 & gamma[-1,2] == 1)
+	dgamma[2,2,] = as.numeric(gamma[-dim(gamma)[1],2] == 1 & gamma[-1,2] == 1)
 	
 	omega     = t(rmultinom(NUM, L, rep(1/L, L)))
 	omega     = omega[,]/L
-	return(list(gamma = gamma, dgamma = c(a[1,1,1], a[2,2,1]), omega = omega))
+	return(list(gamma = gamma, dgamma = dgamma, omega = omega))
 }
 
 em.hmm.E = function(x, Mvar, alttype, L)
@@ -197,23 +202,13 @@ em.hmm.M = function(x, Evar, alttype, L, nulltype, symmetric)
 	{
 		pii[i]  =  Evar$gamma[1, i]
 	}
-	if(is.vector(Evar$dgamma)) # if we are at the first step (i.e the init phase)
+	for (i in 1:2)
 	{
-		A[1,1,] = Evar$dgamma[1]
-		A[1,2,] = 1 - A[1,1,1]
-		A[2,2,] = Evar$dgamma[2]
-		A[2,1,] = 1 - A[2,2,1]
-	}
-	else
-	{
-		for (i in 1:2)
-		{
-			for (j in 1:2)
-			{ 
-				q1  =  sum(Evar$dgamma[i, j, ])
-				q2  =  sum(Evar$gamma[1:(NUM-1), i])
-				A[i, j,]  =  q1/q2
-			}
+		for (j in 1:2)
+		{ 
+			q1  =  sum(Evar$dgamma[i, j, ])
+			q2  =  sum(Evar$gamma[1:(NUM-1), i])
+			A[i, j,]  =  q1/q2
 		}
 	}
 	

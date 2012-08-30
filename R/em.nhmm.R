@@ -1,5 +1,5 @@
 
-em.nhmm = function(x, Z, dist, dist.included=TRUE, alttype='mixnormal', L=2, maxiter=1000, nulltype=2, symmetric=FALSE, seed = 20, iter.CG = 10)
+em.nhmm = function(x, Z, dist, dist.included=TRUE, alttype='mixnormal', L=2, maxiter=1000, nulltype=2, symmetric=FALSE, seed = 100, iter.CG = 100)
 {
 	NUM = length(x)
 	ptol = 1e-2
@@ -53,7 +53,7 @@ em.nhmm = function(x, Z, dist, dist.included=TRUE, alttype='mixnormal', L=2, max
 			break
 		}
 		
-#		print(-sum(log(Evar$c0)))
+		print(-sum(log(Evar$c0)))
 		logL.iter  =  c(logL.iter,-sum(log(Evar$c0)))
 		
 		df1 = abs(Mvar.old$trans.par[2,-1] - Mvar$trans.par[2,-1])
@@ -135,33 +135,11 @@ em.nhmm.seed = function(x, Z, dist.included, alttype, L, nulltype, symmetric, it
 	logL.iter = c(-Inf)
 	logL = c()
 	
-#	Evar     = em.nhmm.init(x, Z, dist.included, 0.95, 0.2, L)
-#	Mvar     = em.nhmm.M(x, Z, dist.included, Evar, alttype, L, nulltype, symmetric, iter.CG, init = T)
-	
-	Mvar = list()
-	Mvar$trans.par      = array(0,c(2,3+dim(Z)[2])) # omega_0 = (0,0,0,0)
-	Mvar$trans.par[2,]  = rnorm(3+dim(Z)[2])        # omega_1 = (labda, sigma_12, sigma_22, rho)
-	
-	Mvar$trans.par[2,4] = abs(Mvar$trans.par[2,4])
-	
-	tmp = em.nhmm.pii.A(Z, dist.included, Mvar$trans.par)
-	
-	Mvar$pii = tmp$pii
-	Mvar$A   = tmp$A
-	Mvar$ptheta  =  c(0.95,0.05)
-	Mvar$f0 = c(0, 1)
-	if(nulltype == 1)
-	{
-		Mvar$f0 = c(0,1,-1)
-	}
-	Mvar$pc  =  rep(1, L)/L
-	mus  =  seq(from=-1, by=1.5, length=L)
-	sds  =  rep(1, L)
-	Mvar$f1  =  cbind(mus, sds)
-	
+	Evar     = em.nhmm.init(x, Z, dist.included, 0.95, 0.2, L)
+	Mvar     = em.nhmm.M(x, Z, dist.included, Evar, alttype, L, nulltype, symmetric, iter.CG)
 	Mvar.old = Mvar
 	
-	while(difference > ptol && niter <= 10)
+	while(difference > ptol && niter <= 20)
 	{
 		niter = niter + 1
 		
@@ -180,7 +158,7 @@ em.nhmm.seed = function(x, Z, dist.included, alttype, L, nulltype, symmetric, it
 			converged=FALSE;
 			break
 		}
-#		print(-sum(log(Evar$c0)))
+		print(-sum(log(Evar$c0)))
 		
 		logL.iter  =  c(logL.iter,-sum(log(Evar$c0)))
 		df1 = abs(Mvar.old$trans.par[2,-1] - Mvar$trans.par[2,-1])
@@ -223,49 +201,55 @@ em.nhmm.seed = function(x, Z, dist.included, alttype, L, nulltype, symmetric, it
 }
 
 
-em.nhmm.init = function(x, Z, dist.included, a11, a22, L = 2)
+em.nhmm.init = function(x, Z, dist.included, A11, A22, L = 2)
 {
 	print("init")
 	NUM = length(x)
 	
+	A         = array(0,c(2,2, NUM-1))
+	trans.par = array(0,c(2,3+dim(Z)[2]))
 	
+	tmp = NA
+	while(sum(is.na(tmp))>0 & length(tmp) == 1)
+	{
+		A_11 = 1
+		A_22 = 1
+		while(A_11 + 1e-4 >= 1 | A_11 - 1e-4 <= 0 | A_22 + 1e-4 >= 1 | A_22 - 1e-4 <= 0)
+		{
+			A_11 = rbeta(1, A11, 1-A11)
+			A_22 = rbeta(1, A22, 1-A22)
+		}
+		A[1,1,] = A_11
+		A[1,2,] = 1 - A[1,1,1]
+		A[2,2,] = A_22
+		A[2,1,] = 1 - A[2,2,1]
+		tmp = try(inverse.rle( list(values=rep(1:2,NUM) ,lengths=1+rgeom( 2*NUM, rep( c( A[1,2,1], A[2,1,1] ), NUM) )))[1:NUM] - 1)
+	}
+	gamma = matrix(rep(NA, NUM*2), NUM, 2, byrow=TRUE)
+	gamma[,1] = tmp
+	gamma[,2] = 1-gamma[,1]
+	dgamma    = array(0,c(2,2, NUM-1))
 	
-	trans.par      = array(0,c(2,3+dim(Z)[2])) # omega_0 = (0,0,0,0)
-	trans.par[2,]  = rnorm(3+dim(Z)[2])        # omega_1 = (labda, sigma_12, sigma_22, rho)
+	dgamma[1,1,] = as.numeric(gamma[-dim(gamma)[1],2] == 0 & gamma[-1,1] == 0)
+	dgamma[2,1,] = as.numeric(gamma[-dim(gamma)[1],2] == 1 & gamma[-1,1] == 0)
+	dgamma[1,2,] = as.numeric(gamma[-dim(gamma)[1],2] == 0 & gamma[-1,2] == 1)
+	dgamma[2,2,] = as.numeric(gamma[-dim(gamma)[1],2] == 1 & gamma[-1,2] == 1)
+	
+	for(i in 1:2)
+	{
+		tmp = glm(dgamma[i,2,] ~ Z[-1,], family=binomial("logit"))
+		trans.par[2,1+i]     = tmp$coefficient[1]
+		trans.par[2,-c(1:3)] = tmp$coefficient[-1]
+	}
 	if(dist.included)
 	{
 		trans.par[2,4] = abs(trans.par[2,4])
 	}
-	tmp = em.nhmm.pii.A(Z, dist.included, trans.par)
-	pii = tmp$pii
-	A   = tmp$A
 	
-	gamma = matrix(rep(0, NUM*2), NUM, 2, byrow=TRUE)
-	gamma[1,2] = rbinom(1, 1, pii[2])
-	for (i in 2:NUM)
-	{
-		if( gamma[i-1,2]== 0 )
-			gamma[i,2] = rbinom(1, 1, A[1, 2, i-1])
-		else
-			gamma[i,2] = rbinom(1, 1, A[2, 2, i-1])
-	}
-#	
-#	for(i in 1:2)
-#	{
-#		for(j in 1:2)
-#		{
-#			print(glm(A[i,j,] > 0.5 ~ Z[-1,], family=binomial("logit")))
-#		}
-#	}
-	
-	gamma[(gamma[,1] == 1),2] = 0.9
-	gamma[(gamma[,1] == 0),2] = 0.1
-	gamma[,1] = 1-gamma[,2]
-	
-	omega = matrix(rep(0, NUM*L), NUM, L, byrow=TRUE)
 	omega     = t(rmultinom(NUM, L, rep(1/L, L)))
 	omega     = omega[,]/L
-	return(list(gamma = gamma, dgamma = tmp, omega = omega, trans.par = trans.par))
+	
+	return(list(gamma = gamma, dgamma = dgamma, omega = omega, trans.par = trans.par))
 }
 
 em.nhmm.E = function(x, Mvar, alttype, L)
@@ -291,11 +275,11 @@ em.nhmm.E = function(x, Mvar, alttype, L)
 		}
 		
 	}
-	plot(res$pr[,1],col=color.scale(pnorm(x),c(1,1,0),0,c(0,1,1), alpha=0.8), pch=".")
+	plot(res$pr[,1],col=color.scale(abs(x),c(1,1,0),0,c(0,1,1), alpha=0.8), pch=".")
 	return(list(gamma = res$pr, nu = res$pr2, dgamma = res$ts, omega = res$wt, c0 = res$rescale, trans.par = Mvar$trans.par))
 }
 
-em.nhmm.M = function(x, Z, dist.included, Evar, alttype, L, nulltype, symmetric, iter.CG, init = F)
+em.nhmm.M = function(x, Z, dist.included, Evar, alttype, L, nulltype, symmetric, iter.CG)
 {
 #	print("M step")
 	NUM = length(x)
@@ -374,15 +358,7 @@ em.nhmm.M = function(x, Z, dist.included, Evar, alttype, L, nulltype, symmetric,
 			f1 = cbind(mus, sds)
 		}
 	}
-	if(init)
-	{
-		CG = Evar$dgamma
-		CG$trans.par = Evar$trans.par
-	}
-	else
-	{
-		CG = try(em.nhmm.compute.CG(Z, dist.included, Evar$dgamma, Evar$gamma, Evar$trans.par, iter.CG))
-	}
+	CG = try(em.nhmm.compute.CG(Z, dist.included, Evar$dgamma, Evar$gamma, Evar$trans.par, iter.CG))
 	if(length(CG) > 2)
 	{
 		return(list(pii = CG$pii, ptheta = ptheta, pc=pc, A = CG$A , trans.par = CG$trans.par, f0 = f0, f1 = f1))
