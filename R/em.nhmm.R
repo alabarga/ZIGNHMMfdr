@@ -103,9 +103,12 @@ em.nhmm.init = function(x, Z, dist.included, A11, A22, L = 2)
 	{
 		A_11 = 1
 		A_22 = 1
-		while(A_11 + 1e-4 >= 1 | A_11 - 1e-4 <= 0 | A_22 + 1e-4 >= 1 | A_22 - 1e-4 <= 0)
+		while(A_11 + 1e-4 >= 1 | A_11 - 1e-4 <= 0)
 		{
 			A_11 = rbeta(1, A11, 1-A11)
+		}
+		while(A_22 + 1e-4 >= 1 | A_22 - 1e-4 <= 0)
+		{
 			A_22 = rbeta(1, A22, 1-A22)
 		}
 		A[1,1,] = A_11
