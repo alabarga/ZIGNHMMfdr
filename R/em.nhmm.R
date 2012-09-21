@@ -1,5 +1,5 @@
 
-em.nhmm = function(x, Z, dist, dist.included=TRUE, alttype='mixnormal', L=2, maxiter=1000, nulltype=1, symmetric=FALSE, seed = 20, iter.CG = 100)
+em.nhmm = function(x, Z, dist, dist.included=TRUE, alttype='mixnormal', L=2, maxiter=1000, nulltype=1, symmetric=FALSE, seed = 20, iter.CG = 1000)
 {
 	NUM = length(x)
 	
@@ -69,9 +69,9 @@ em.nhmm.runseed = function(x, Z, dist.included, alttype, L, seed, nulltype, maxi
 		print(paste(paste(paste("seed : ",niter),"/"),seed))
 		seed_Evar     = em.nhmm.init(x, Z, dist.included, 0.95, 0.2, L)
 		seed_Mvar     = em.nhmm.M(x, Z, dist.included, seed_Evar, alttype, L, nulltype, symmetric, iter.CG)
-		seed_EMvar     = try(em.nhmm.EM(x, Z, dist.included, seed_Mvar, alttype, L, 20, nulltype, symmetric, iter.CG))
+		seed_EMvar    = try(em.nhmm.EM(x, Z, dist.included, seed_Mvar, alttype, L, 10, nulltype, symmetric, iter.CG))
 		
-		if(length(EMvar)==1)
+		if(length(seed_EMvar)==1)
 		{
 			print(paste(paste(paste("runseed: Numerical ERROR: Rerunning...     seed : ",niter),"/"),seed))
 		}
@@ -196,15 +196,8 @@ em.nhmm.EM = function(x, Z, dist.included, Mvar, alttype, L, maxiter, nulltype, 
 		logL.old = logL
 		Mvar.old = Mvar
 	}
-	if(length(Mvar) > 2 & converged)
-	{
-		logL = -sum(log(Evar$c0))
-		return(list(pii=Mvar$pii, ptheta = Mvar$ptheta, pc=Mvar$pc, A=Mvar$A, trans.par = Mvar$trans.par, f0=Mvar$f0, f1=Mvar$f1, logL = logL, gamma = Evar$gamma, nu = Evar$nu, dgamma = Evar$dgamma, omega = Evar$omega, c0 = Evar$c0))
-	}
-	else
-	{
-		stop
-	}
+	logL = -sum(log(Evar$c0))
+	return(list(pii=Mvar$pii, ptheta = Mvar$ptheta, pc=Mvar$pc, A=Mvar$A, trans.par = Mvar$trans.par, f0=Mvar$f0, f1=Mvar$f1, logL = logL, gamma = Evar$gamma, nu = Evar$nu, dgamma = Evar$dgamma, omega = Evar$omega, c0 = Evar$c0))
 }
 
 em.nhmm.E = function(x, Mvar, alttype, L)
@@ -230,7 +223,7 @@ em.nhmm.E = function(x, Mvar, alttype, L)
 		}
 		
 	}
-	plot(res$pr[,1],col=color.scale(abs(x),c(1,1,0),0,c(0,1,1), alpha=0.8), pch=".")
+	plot(res$pr[,1],col=color.scale(abs(x*2),c(1,1,0),0,c(0,1,1), alpha=1), pch=".")
 	return(list(gamma = res$pr, nu = res$pr2, dgamma = res$ts, omega = res$wt, c0 = res$rescale, trans.par = Mvar$trans.par))
 }
 
@@ -331,6 +324,7 @@ em.nhmm.M = function(x, Z, dist.included, Evar, alttype, L, nulltype, symmetric,
 	}
 	else
 	{
+		print("Error in CG")
 		stop
 	}
 }
@@ -338,12 +332,15 @@ em.nhmm.M = function(x, Z, dist.included, Evar, alttype, L, nulltype, symmetric,
 em.nhmm.compute.CG = function(Z, dist.included, dgamma, gamma, trans.par, iter.CG)
 {
 	gradient.old = em.nhmm.compute.gradient(Z, dist.included, dgamma, gamma, trans.par)
+	trans.par.old = trans.par
 	phi = -gradient.old
+	ptol = 1
 	niter = 0
-	while(niter < iter.CG)
+	while(ptol>1e-4 & niter < iter.CG)
 	{
+		trans.par.old = trans.par
 		niter = niter + 1
-		tmp = try( em.nhmm.line.search(Z, dist.included, dgamma, gamma, trans.par, phi) )
+		tmp = try( em.nhmm.line.search(Z, dist.included, dgamma, gamma, trans.par, phi, iter.CG) )
 		if(is.na(tmp$nu))
 		{
 			break
@@ -361,6 +358,7 @@ em.nhmm.compute.CG = function(Z, dist.included, dgamma, gamma, trans.par, iter.C
 		{
 			trans.par[2,4] = abs(trans.par[2,4])
 		}
+		ptol = max(abs(trans.par[2,-1] - trans.par.old[2,-1]))
 	}
 	if(!is.na(tmp$nu))
 	{
@@ -372,7 +370,7 @@ em.nhmm.compute.CG = function(Z, dist.included, dgamma, gamma, trans.par, iter.C
 	}
 }
 
-em.nhmm.line.search = function(Z, dist.included, dgamma, gamma, trans.par, phi)
+em.nhmm.line.search = function(Z, dist.included, dgamma, gamma, trans.par, phi, iter.CG)
 {
 	N = dim(Z)[1] - 1
 	nu = 0
@@ -396,7 +394,7 @@ em.nhmm.line.search = function(Z, dist.included, dgamma, gamma, trans.par, phi)
 		}
 	}
 	
-	while(ptol>1e-3 & niter < 100)
+	while(ptol>1e-4 & niter < iter.CG)
 	{
 		niter = niter + 1
 		trans.par.new = trans.par + nu * phi
@@ -411,12 +409,18 @@ em.nhmm.line.search = function(Z, dist.included, dgamma, gamma, trans.par, phi)
 				dQ2 = dQ2 - sum( fixe_2[i,j,]^2 * trans.prob$A[i,j,] * ( 1 - trans.prob$A[i,j,] ) * gamma[-dim(gamma)[1], i] )
 			}
 		}
+		
 		nu = nu - dQ / dQ2
-		ptol = abs(dQ)
+#		print(nu)
+		ptol = abs(dQ/ dQ2)
 		if(is.na(ptol) | niter > 100){
 			nu <- NaN
 			break
 		}
+	}
+	if(is.nan(dQ2))
+	{
+		print("Error in line search")
 	}
 	trans.par.new = trans.par + nu * phi
 	return(list(nu = nu, trans.par = trans.par.new))
