@@ -35,7 +35,7 @@ em.nhmm = function(x, Z, dist, dist.included=TRUE, alttype='mixnormal', L=2, max
 	{
 		EMvar = em.nhmm.runseed(x, Z, dist.included, alttype, L, seed, nulltype, maxiter, symmetric, iter.CG)
 		EMvar = try(em.nhmm.EM(x, Z, dist.included, EMvar, alttype, L, maxiter, nulltype, symmetric, iter.CG))
-		if(length(Mvar) <= 1)
+		if(length(EMvar) <= 1)
 		{
 			print("error: Trying next best seed")
 		}
@@ -44,7 +44,7 @@ em.nhmm = function(x, Z, dist, dist.included=TRUE, alttype='mixnormal', L=2, max
 	lfdr = EMvar$gamma[, 1]
 	if(length(EMvar) > 1)
 	{
-		logL  =  -sum(log(Evar$c0))
+		logL  =  -sum(log(EMvar$c0))
 		if (nulltype > 0) {
 			BIC  =  logL - (3*L + dim(Z)[2] + 2 + 1)*log(NUM)/2 
 		} else {
