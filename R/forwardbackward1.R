@@ -9,6 +9,7 @@ NUM<-length(x)
 delta = length(x[x==0])/length(x)
 ## Densities
 
+f1x<-dnorm(x, f1[1], f1[2])
 f0x <- c()
 if(length(f0) < 3)
 {
@@ -17,14 +18,10 @@ if(length(f0) < 3)
 else
 {
 	f0x<- delta * (x==0) + (1-delta)*dnorm(x, f0[1], f0[2]) * (x!=0)
-}
-
-
-f1x<-dnorm(x, f1[1], f1[2])
-if(length(f0) >= 3)
-{
 	f1x[x==0] = 0
 }
+
+
 
 ## the backward-forward procedure
 

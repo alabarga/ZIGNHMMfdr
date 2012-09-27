@@ -19,10 +19,19 @@ fdr.nhmm <- function(x, Z = NULL, dist = NULL, log.transform.dist = TRUE, alttyp
 	if(alttype=='kernel'){
 		L = 1
 	}
-	if(nulltype >5){
-		cat('Error: nulltype must be 0, 1, 2 or 3','\n')
-		return(0)
+	else
+	{
+		if(symmetric & (L != 1 | L%%2 != 0))
+		{
+			cat('Error: can not be symetric with an odd L value','\n')
+			symetric = F
+		}
 	}
+	if(nulltype >1){
+		cat('Error: nulltype must be 0 or 1','\n')
+		nulltype = 1
+	}
+	
 
 	fdr_res <- 0
 	n.try <- 1

@@ -7,6 +7,12 @@ L<-length(pc)
 delta = length(x[x==0])/length(x)
 ## Densities
 
+f1x<-rep(0, NUM)
+for (c in 1:L)
+{
+  f1x<-f1x+pc[c]*dnorm(x, f1[c, 1], f1[c, 2])
+}
+
 f0x <- c()
 if(length(f0) < 3)
 {
@@ -14,27 +20,18 @@ if(length(f0) < 3)
 }
 else
 {
-	f0x<- delta * (x==0) + (1-delta)*dnorm(x, f0[1], f0[2]) * (x!=0)
-}
-
-f1x<-rep(0, NUM)
-for (c in 1:L)
-{
-  f1x<-f1x+pc[c]*dnorm(x, f1[c, 1], f1[c, 2])
-}
-if(length(f0) >= 3)
-{
+	f0x = delta * (x==0) + (1-delta)*dnorm(x, f0[1], f0[2]) * (x!=0)
 	f1x[x==0] = 0
 }
 
 alpha<-matrix(rep(0, NUM*2), NUM, 2, byrow=TRUE)
 c0<-rep(0, NUM)
-
 alpha[1, 1]<-pii[1]*f0x[1]
 alpha[1, 2]<-pii[2]*f1x[1]
-c0[1]<-1/sum(alpha[1, ])
-alpha[1, ]<-c0[1]*alpha[1, ]
 
+c0[1]<-1/sum(alpha[1, ])
+
+alpha[1, ]<-c0[1]*alpha[1, ]
 alpha.tmp <- .C('calAlpha',alpha=as.numeric(alpha),c0=as.numeric(c0),as.numeric(A),as.numeric(f0x),as.numeric(f1x),as.integer(NUM))
 
 alpha <- alpha.tmp$alpha
