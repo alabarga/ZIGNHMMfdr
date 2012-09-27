@@ -21,10 +21,17 @@ fdr.nhmm <- function(x, Z = NULL, dist = NULL, log.transform.dist = TRUE, alttyp
 	}
 	else
 	{
-		if(symmetric & (L != 1 | L%%2 != 0))
+		if(symmetric)
 		{
-			cat('Error: can not be symetric with an odd L value','\n')
-			symetric = F
+			if(L == 1 | L%%2 == 0)
+			{
+				
+			}
+			else
+			{
+				cat('Error: can not be symetric with an odd L value','\n')
+				symetric = F
+			}
 		}
 	}
 	if(nulltype >1){
