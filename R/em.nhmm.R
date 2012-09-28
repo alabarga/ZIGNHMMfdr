@@ -36,7 +36,7 @@ em.nhmm = function(x, Z, dist, dist.included=TRUE, alttype='mixnormal', L=2, max
 		niter = niter + 1
 		best_EMvar = EMvar[[niter]]
 		if(v) print(paste("best seed : ",best_EMvar$logL))
-		best_EMvar = try(em.nhmm.EM(x, Z, dist.included, best_EMvar, alttype, L, maxiter, nulltype, symmetric, iter.CG, ptol, v = v))
+		best_EMvar = try(em.nhmm.EM(x, Z, dist.included, best_EMvar, alttype, L, maxiter, nulltype, symmetric, iter.CG, ptol, E = T, v = v))
 		if(length(EMvar) <= 1)
 		{
 			if(v) print("error: Trying next best seed")
@@ -64,7 +64,7 @@ em.nhmm = function(x, Z, dist, dist.included=TRUE, alttype='mixnormal', L=2, max
 em.nhmm.runseed = function(x, Z, dist.included, alttype, L, seed, burn, nulltype, maxiter, symmetric, iter.CG, ptol, core, v)
 {
 	EMvar = mclapply(1:seed, FUN = function(x, zval, alttype, L, burn, nulltype, symmetric, ptol, seed, v){
-		seed_EMvar = list(logL=-Inf)
+		seed_EMvar = list()
 		while(length(seed_EMvar)<=1)
 		{
 			if(v) print(paste(paste(paste("seed : ",x),"/"),seed))
@@ -77,7 +77,7 @@ em.nhmm.runseed = function(x, Z, dist.included, alttype, L, seed, burn, nulltype
 				break
 			}
 			rm(seed_Evar)
-			seed_EMvar    = try(em.nhmm.EM(zval, Z, dist.included, seed_Mvar, alttype, L, burn, nulltype, symmetric, iter.CG, ptol, v = v))
+			seed_EMvar    = try(em.nhmm.EM(zval, Z, dist.included, seed_Mvar, alttype, L, burn, nulltype, symmetric, iter.CG, ptol, E = F, v = v))
 			rm(seed_Mvar)
 		}
 		return(seed_EMvar)
@@ -87,7 +87,7 @@ em.nhmm.runseed = function(x, Z, dist.included, alttype, L, seed, burn, nulltype
 	logL = c()
 	for(i in 1:seed)
 	{
-		logL[i] = (EMvar[[i]])$logL
+		logL[i] = ifelse(length(EMvar[[i]]) > 1, (EMvar[[i]])$logL, -Inf)
 	}
 	EMvar_ordered = list()
 	j = 1
@@ -157,7 +157,7 @@ em.nhmm.init = function(x, Z, dist.included, A11, A22, L, symmetric, v)
 	return(list(gamma = gamma, dgamma = dgamma, omega = omega, trans.par = trans.par))
 }
 
-em.nhmm.EM = function(x, Z, dist.included, Mvar, alttype, L, maxiter, nulltype, symmetric, iter.CG, ptol, v)
+em.nhmm.EM = function(x, Z, dist.included, Mvar, alttype, L, maxiter, nulltype, symmetric, iter.CG, ptol, E, v)
 {
 	NUM = length(x)
 	difference = 1
@@ -211,13 +211,20 @@ em.nhmm.EM = function(x, Z, dist.included, Mvar, alttype, L, maxiter, nulltype, 
 		logL.old = logL
 		Mvar.old = Mvar
 	}
-	rm(Evar)
 	if(!converged)
 	{
 		return(-1)
 	}
 	if(v) print(logL.old)
-	return(list(pii=Mvar.old$pii, ptheta = Mvar.old$ptheta, pc=Mvar.old$pc, A=Mvar.old$A, trans.par = Mvar.old$trans.par, f0=Mvar.old$f0, f1=Mvar.old$f1, logL = logL.old))
+	if(E)
+	{
+		return(list(pii=Mvar.old$pii, ptheta = Mvar.old$ptheta, pc=Mvar.old$pc, A=Mvar.old$A, trans.par = Mvar.old$trans.par, f0=Mvar.old$f0, f1=Mvar.old$f1, logL = logL.old, gamma = Evar$gamma))
+	}
+	else
+	{
+		rm(Evar)
+		return(list(pii=Mvar.old$pii, ptheta = Mvar.old$ptheta, pc=Mvar.old$pc, A=Mvar.old$A, trans.par = Mvar.old$trans.par, f0=Mvar.old$f0, f1=Mvar.old$f1, logL = logL.old))
+	}
 }
 
 em.nhmm.E = function(x, Mvar, alttype, L, symmetric, v)

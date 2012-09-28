@@ -12,7 +12,7 @@ em.hmm = function(x, alttype="mixnormal", L=2, maxiter=1000, nulltype=2, symmetr
 		niter = niter + 1
 		best_EMvar = EMvar[[niter]]
 		if(v) print(paste("best seed : ",best_EMvar$logL))
-		best_EMvar = try(em.hmm.EM(x, best_EMvar, alttype, L, maxiter, nulltype, symmetric, ptol, v = v))
+		best_EMvar = try(em.hmm.EM(x, best_EMvar, alttype, L, maxiter, nulltype, symmetric, ptol, E=T, v = v))
 		if(length(EMvar) <= 1)
 		{
 			if(v) print("error: Trying next best seed")
@@ -53,7 +53,7 @@ em.hmm.runseed = function(x, alttype, L, seed, burn, nulltype, maxiter, symmetri
 				break
 			}
 			rm(seed_Evar)
-			seed_EMvar    = try(em.hmm.EM(zval, seed_Mvar, alttype, L, burn, nulltype, symmetric, ptol, v = v))
+			seed_EMvar    = try(em.hmm.EM(zval, seed_Mvar, alttype, L, burn, nulltype, symmetric, ptol, E=F, v = v))
 		}
 		return(seed_EMvar)
 	}, mc.cores = core, zval = x, alttype=alttype, L=L, burn=burn, nulltype=nulltype, symmetric=symmetric, ptol=ptol, seed=seed, v = v)
@@ -61,7 +61,7 @@ em.hmm.runseed = function(x, alttype, L, seed, burn, nulltype, maxiter, symmetri
 	logL = c()
 	for(i in 1:seed)
 	{
-		logL[i] = (EMvar[[i]])$logL
+		logL[i] = ifelse(length(EMvar[[i]]) > 1, (EMvar[[i]])$logL, -Inf)
 	}
 	EMvar_ordered = list()
 	j = 1
@@ -120,7 +120,7 @@ em.hmm.init = function(x, A11, A22, L = 2, symmetric, v)
 	return(list(gamma = gamma, dgamma = c(A[1,1,1], A[2,2,1]), omega = omega))
 }
 
-em.hmm.EM = function(x, Mvar, alttype, L, maxiter, nulltype, symmetric, ptol, v)
+em.hmm.EM = function(x, Mvar, alttype, L, maxiter, nulltype, symmetric, ptol, E, v)
 {
 	NUM = length(x)
 	difference = 1
@@ -180,7 +180,15 @@ em.hmm.EM = function(x, Mvar, alttype, L, maxiter, nulltype, symmetric, ptol, v)
 		return(-1)
 	}
 	if(v) print(-sum(log(Evar$c0)))
-	return(list(pii=Mvar$pii, ptheta = Mvar$ptheta, pc=Mvar$pc, A=Mvar$A, f0=Mvar$f0, f1=Mvar$f1, logL = logL))
+	if(E)
+	{
+		return(list(pii=Mvar$pii, ptheta = Mvar$ptheta, pc=Mvar$pc, A=Mvar$A, f0=Mvar$f0, f1=Mvar$f1, logL = logL, gamma = Evar$gamma))
+	}
+	else
+	{
+		rm(Evar)
+		return(list(pii=Mvar$pii, ptheta = Mvar$ptheta, pc=Mvar$pc, A=Mvar$A, f0=Mvar$f0, f1=Mvar$f1, logL = logL))
+	}
 }
 
 em.hmm.E = function(x, Mvar, alttype, L, symmetric, v)

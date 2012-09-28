@@ -1,6 +1,6 @@
 useDynLib("ZIGNHMMfdr")
 
-export("fdr.nhmm","em.hmm", "em.hmm.runseed",  "em.hmm.init", "em.hmm.EM", "em.hmm.E", "em.hmm.M","em.indep","em.nhmm","em.nhmm.runseed","em.nhmm.init", "em.nhmm.EM","em.nhmm.E","em.nhmm.M", "em.nhmm.compute.CG", "em.nhmm.line.search", "em.nhmm.compute.gradient", "em.nhmm.pii.A", "forwardbackward","forwardbackward1","forwardbackward1.indep","forwardbackward1.kernel","forwardbackward1.indep.kernel","update.trans.prob.nhmm","LIS.adjust","simdata1.nhmm","simdata.nhmm","compute.A.nhmm","compute.gradient","find.nu","update_delta2")
+export("fdr.nhmm", "f0f1", "em.hmm", "em.hmm.runseed",  "em.hmm.init", "em.hmm.EM", "em.hmm.E", "em.hmm.M","em.indep","em.nhmm","em.nhmm.runseed","em.nhmm.init", "em.nhmm.EM","em.nhmm.E","em.nhmm.M", "em.nhmm.compute.CG", "em.nhmm.line.search", "em.nhmm.compute.gradient", "em.nhmm.pii.A", "forwardbackward","forwardbackward1","forwardbackward1.indep","forwardbackward1.kernel","forwardbackward1.indep.kernel","update.trans.prob.nhmm","LIS.adjust","simdata1.nhmm","simdata.nhmm","compute.A.nhmm","compute.gradient","find.nu","update_delta2")
 
 importFrom("parallel")
 
