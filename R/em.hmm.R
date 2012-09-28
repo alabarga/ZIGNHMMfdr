@@ -1,82 +1,84 @@
 
-em.hmm = function(x, alttype="mixnormal", L=2, maxiter=1000, nulltype=2, symmetric= FALSE, seed = 100, burn = 200, ptol=1e-2)
+em.hmm = function(x, alttype="mixnormal", L=2, maxiter=1000, nulltype=2, symmetric= FALSE, seed = 100, burn = 200, ptol=1e-2, core = 2, v = F)
 {
 	NUM = length(x)
-	seed_try = 1
 	ptol = 1e-2
 	difference = 1
-	EMvar = list()
-	
-	while(length(EMvar) <= 1)
+	niter = 0
+	EMvar = em.hmm.runseed(x, alttype, L, seed, burn, nulltype, maxiter, symmetric, ptol, core, v = v)
+	best_EMvar = list()
+	while(length(best_EMvar) <= 1)
 	{
-		EMvar = em.hmm.runseed(x, alttype, L, nulltype, symmetric, seed, burn, ptol)
-		print(paste("best seed : ",EMvar$logL))
-		EMvar = try(em.hmm.EM(x, EMvar, alttype, L, maxiter, nulltype, symmetric, ptol))
+		niter = niter + 1
+		best_EMvar = EMvar[[niter]]
+		if(v) print(paste("best seed : ",best_EMvar$logL))
+		best_EMvar = try(em.hmm.EM(x, best_EMvar, alttype, L, maxiter, nulltype, symmetric, ptol, v = v))
 		if(length(EMvar) <= 1)
 		{
-			print("error: Trying next best seed")
+			if(v) print("error: Trying next best seed")
+			best_EMvar = EMvar[[niter]]
 		}
 	}
 	
-	lfdr = EMvar$gamma[, 1]
-	if(length(EMvar) > 1)
+	lfdr = best_EMvar$gamma[, 1]
+	if(length(best_EMvar) > 1)
 	{
-		logL  =  -sum(log(EMvar$c0))
+		logL  =  best_EMvar$logL
+		if(v) print(logL)
 		if (nulltype > 0) {
 			BIC = logL-(3*L+3)*log(NUM)/2 
 		} else {
 			BIC = logL-(3*L+2)*log(NUM)/2 
 		}
-		em.var = list(ptheta = EMvar$ptheta, pii = EMvar$pii, A = EMvar$A, pc = EMvar$pc, f0 = EMvar$f0, f1 = EMvar$f1, LIS=lfdr, logL=logL, BIC=BIC, gamma = EMvar$gamma, dgamma = EMvar$dgamma)
+		em.var = list(ptheta = best_EMvar$ptheta, pii = best_EMvar$pii, A = best_EMvar$A, pc = best_EMvar$pc, f0 = best_EMvar$f0, f1 = best_EMvar$f1, LIS=lfdr, logL=logL, BIC=BIC, gamma = best_EMvar$gamma, dgamma = best_EMvar$dgamma)
 		return (em.var)
 	} else {
 		return(-1)
 	}
 }
 
-em.hmm.runseed = function(x, alttype, L, nulltype, symmetric, seed, burn, ptol)
+em.hmm.runseed = function(x, alttype, L, seed, burn, nulltype, maxiter, symmetric, ptol, core, v)
 {
-#	print("runseed")
-	niter = 0
-	
-	EMvar = list(logL = -Inf)
-	
-	while(niter <= seed)
-	{
-		print(paste(paste(paste("seed : ",niter),"/"),seed))
-		seed_Evar     = em.hmm.init(x, 0.90, 0.2, L, symmetric)
-		seed_Mvar     = try(em.hmm.M(x, seed_Evar, alttype, L, nulltype, symmetric))
-		if( length(seed_Mvar) == 1)
+	EMvar = mclapply(1:seed, FUN = function(x, zval, alttype, L, burn, nulltype, symmetric, ptol, seed, v){
+		seed_EMvar = list(logL=-Inf)
+		while(length(seed_EMvar)<=1)
 		{
-#			print("Error in M")
-			converged=FALSE;
-			break
-		}
-		seed_Mvar$pii = c(0.5, 0.5)
-		seed_EMvar    = try(em.hmm.EM(x, seed_Mvar, alttype, L, burn, nulltype, symmetric, ptol))
-		
-		if(length(seed_EMvar)==1)
-		{
-#			print(paste(paste(paste("runseed: Numerical ERROR: Rerunning...     seed : ",niter),"/"),seed))
-		}
-		else
-		{
-			if(!is.na(seed_EMvar$logL))
+			if(v) print(paste(paste(paste("seed : ",x),"/"),seed))
+			seed_Evar     = em.hmm.init(zval, 0.95, 0.2, L, symmetric, v = v)
+			seed_Mvar     = try(em.hmm.M(zval, seed_Evar, alttype, L, nulltype, symmetric, v = v))
+			if( length(seed_Mvar) == 1)
 			{
-				if(seed_EMvar$logL > EMvar$log)
-				{
-					EMvar = seed_EMvar
-				}
-				niter = niter + 1
+				if(v) print("Error in M")
+				converged=FALSE;
+				break
 			}
+			rm(seed_Evar)
+			seed_EMvar    = try(em.hmm.EM(zval, seed_Mvar, alttype, L, burn, nulltype, symmetric, ptol, v = v))
 		}
+		return(seed_EMvar)
+	}, mc.cores = core, zval = x, alttype=alttype, L=L, burn=burn, nulltype=nulltype, symmetric=symmetric, ptol=ptol, seed=seed, v = v)
+	
+	logL = c()
+	for(i in 1:seed)
+	{
+		logL[i] = (EMvar[[i]])$logL
 	}
-	return(EMvar)
+	EMvar_ordered = list()
+	j = 1
+	for(i in order(logL, decreasing = T))
+	{
+		EMvar_ordered [[j]] = EMvar[[i]]
+		j = j + 1
+	}
+	
+	return(EMvar_ordered)
 }
 
-em.hmm.init = function(x, A11, A22, L = 2, symmetric)
+
+
+em.hmm.init = function(x, A11, A22, L = 2, symmetric, v)
 {
-#	print("init")
+#	if(v) print("init")
 	NUM       = length(x)
 	A         = array(0,c(2,2, NUM-1))
 	
@@ -118,7 +120,7 @@ em.hmm.init = function(x, A11, A22, L = 2, symmetric)
 	return(list(gamma = gamma, dgamma = c(A[1,1,1], A[2,2,1]), omega = omega))
 }
 
-em.hmm.EM = function(x, Mvar, alttype, L, maxiter, nulltype, symmetric, ptol)
+em.hmm.EM = function(x, Mvar, alttype, L, maxiter, nulltype, symmetric, ptol, v)
 {
 	NUM = length(x)
 	difference = 1
@@ -132,10 +134,10 @@ em.hmm.EM = function(x, Mvar, alttype, L, maxiter, nulltype, symmetric, ptol)
 	while(difference > ptol && niter <= maxiter)
 	{
 		niter = niter + 1
-		Evar     = try(em.hmm.E(x, Mvar, alttype, L, symmetric))
+		Evar     = try(em.hmm.E(x, Mvar, alttype, L, symmetric, v = v))
 		if( length(Evar) == 1)
 		{
-#			print("Error in E")
+#			if(v) print("Error in E")
 			converged=FALSE;
 			break
 		}
@@ -144,15 +146,15 @@ em.hmm.EM = function(x, Mvar, alttype, L, maxiter, nulltype, symmetric, ptol)
 		
 		if( logL < logL.old & abs(logL - logL.old) > 0.1)
 		{
-			print(paste(paste(paste("Error in EM : logL increasing by", logL.old - logL ), "iteration :"), niter))
+			if(v) print(paste(paste(paste("Error in EM : logL increasing by", logL.old - logL ), "iteration :"), niter))
 			converged=FALSE;
 			break
 		}
 		
-		Mvar     = try(em.hmm.M(x, Evar, alttype, L, nulltype, symmetric))
+		Mvar     = try(em.hmm.M(x, Evar, alttype, L, nulltype, symmetric, v = v))
 		if( length(Mvar) == 1)
 		{
-#			print("Error in M")
+#			if(v) print("Error in M")
 			converged=FALSE;
 			break
 		}
@@ -164,7 +166,7 @@ em.hmm.EM = function(x, Mvar, alttype, L, maxiter, nulltype, symmetric, ptol)
 		
 		if( is.na(difference) )
 		{
-#			print("Error in EM : NA result")
+#			if(v) print("Error in EM : NA result")
 			converged=FALSE;
 			break
 		}
@@ -172,19 +174,18 @@ em.hmm.EM = function(x, Mvar, alttype, L, maxiter, nulltype, symmetric, ptol)
 		logL.old = logL
 		Mvar.old = Mvar
 		
-		f0f1(x, list(pii=Mvar.old$pii, ptheta = Mvar.old$ptheta, pc=Mvar.old$pc, A=Mvar.old$A, trans.par = Mvar.old$trans.par, f0=Mvar.old$f0, f1=Mvar.old$f1, logL = logL.old, gamma = Evar$gamma, nu = Evar$nu, dgamma = Evar$dgamma, omega = Evar$omega, c0 = Evar$c0), k=(alttype == "kernel"))
 	}
 	if(!converged)
 	{
 		return(-1)
 	}
-	print(-sum(log(Evar$c0)))
-	return(list(pii=Mvar$pii, ptheta = Mvar$ptheta, pc=Mvar$pc, A=Mvar$A, f0=Mvar$f0, f1=Mvar$f1, logL = logL, gamma = Evar$gamma, dgamma = Evar$dgamma, omega = Evar$omega, c0 = Evar$c0))
+	if(v) print(-sum(log(Evar$c0)))
+	return(list(pii=Mvar$pii, ptheta = Mvar$ptheta, pc=Mvar$pc, A=Mvar$A, f0=Mvar$f0, f1=Mvar$f1, logL = logL))
 }
 
-em.hmm.E = function(x, Mvar, alttype, L, symmetric)
+em.hmm.E = function(x, Mvar, alttype, L, symmetric, v)
 {
-#	print("E step")
+#	if(v) print("E step")
 	res = list()
 	NUM = length(x)
 	delta = length(x[x==0])/length(x)
@@ -281,7 +282,7 @@ em.hmm.E = function(x, Mvar, alttype, L, symmetric)
 	return(list(gamma = gamma, dgamma = dgamma, omega = omega, c0 = c0))
 }
 
-em.hmm.M = function(x, Evar, alttype, L, nulltype, symmetric)
+em.hmm.M = function(x, Evar, alttype, L, nulltype, symmetric, v)
 {
 	NUM = length(x)
 	pii  =  c(0.95, 0.05)

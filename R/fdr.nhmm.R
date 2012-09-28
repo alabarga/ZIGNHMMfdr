@@ -1,4 +1,4 @@
-fdr.nhmm <- function(x, Z = NULL, dist = NULL, log.transform.dist = TRUE, alttype = 'kernel', L=2, maxiter=1000, nulltype=0, modeltype = 'NHMM', symmetric=FALSE, seed = 100)
+fdr.nhmm <- function(x, Z = NULL, dist = NULL, log.transform.dist = TRUE, alttype = 'kernel', L=2, maxiter=1000, nulltype=0, modeltype = 'NHMM', symmetric=FALSE, seed = 20, burn = 20, ptol = 1e-3, core = 2, v = F)
 {
 	if(modeltype!='NHMM'&modeltype!='HMM'&modeltype!='Indep'){
 		cat('Error: modeltype must be NHMM, HMM or Indep','\n')
@@ -60,16 +60,16 @@ fdr.nhmm <- function(x, Z = NULL, dist = NULL, log.transform.dist = TRUE, alttyp
 	cat('Warning: Z missing...run as HMM','\n')
 
 	while(length(fdr_res)==1&n.try<3){
-		fdr_res <- try(em.hmm(x=x, alttype=alttype, L=L, maxiter=maxiter, nulltype=nulltype, symmetric=symmetric))
+		fdr_res <- try(em.hmm(x=x, alttype=alttype, L=L, maxiter=maxiter, nulltype=nulltype, symmetric=symmetric, seed=seed, burn=burn, ptol=ptol, core = core, v = v))
 		if(length(fdr_res)==1){cat('Numerical ERROR: Rerunning...','\n'); print(traceback())}
 		n.try <- n.try + 1
 	}
 	}
 	if(modeltype == 'HMM'){
-		cat('Running with alltype ',alttype,', nulltype', nulltype,', modeltype ',modeltype,'...','\n')
+		cat('Running with alltype ',alttype,', nulltype', nulltype,', modeltype ',modeltype,',symmetric',symmetric,', core',core,',verbose',v,'\n')
 
 		while(length(fdr_res)==1&n.try<3){
-			fdr_res <- try(em.hmm(x=x, alttype=alttype, L=L, maxiter=maxiter, nulltype=nulltype, symmetric=symmetric))
+			fdr_res <- try(em.hmm(x=x, alttype=alttype, L=L, maxiter=maxiter, nulltype=nulltype, symmetric=symmetric, seed=seed, burn=burn, ptol=ptol, core = core, v = v))
 			if(length(fdr_res)==1){cat('Numerical ERROR: Rerunning...','\n'); print(traceback())}
 			
 			n.try <- n.try + 1
@@ -77,8 +77,8 @@ fdr.nhmm <- function(x, Z = NULL, dist = NULL, log.transform.dist = TRUE, alttyp
 
 	}
 	if(modeltype == 'NHMM' & (length(Z) >0|length(dist)>0)){
-		cat('Running with alltype ',alttype,', nulltype', nulltype,', modeltype ',modeltype,'...','\n')
-		fdr_res <- em.nhmm(x=x, Z=Z, dist, dist.included=dist.included, alttype=alttype, L=L, maxiter=maxiter, nulltype=nulltype, symmetric=symmetric)
+		cat('Running with alltype ',alttype,', nulltype', nulltype,', modeltype ',modeltype,',symmetric',symmetric,', core',core,',verbose',v,'\n')
+		fdr_res <- em.nhmm(x=x, Z=Z, dist, dist.included=dist.included, alttype=alttype, L=L, maxiter=maxiter, nulltype=nulltype, symmetric=symmetric, seed=seed, burn=burn, ptol=ptol, core = core, v = v)
 #		while(length(fdr_res)==1&n.try<3){
 #			fdr_res <- try(em.nhmm(x=x, Z=Z, dist, dist.included=dist.included, alttype=alttype, L=L, maxiter=maxiter, nulltype=nulltype, symmetric=symmetric))
 #			if(length(fdr_res)==1){cat('Numerical ERROR: Rerunning...','\n'); print(traceback())}
