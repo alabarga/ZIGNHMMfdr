@@ -10,7 +10,7 @@ function(Z, dgamma, gamma, trans.par1, trans.par2,iter.conj.grad=10, dist.includ
 	n.conj.grad = 0
 	while(n.conj.grad <= iter.conj.grad){
 
-	tmp <- try(find.nu(Z, dgamma, gamma, c(0,0,0,0),delta2.old,trans.par1.old, trans.par2.old,dist.included=dist.included))
+	tmp <- try(find.nu(Z, dgamma, gamma, rep(0, length(delta2.old)),delta2.old,trans.par1.old, trans.par2.old,dist.included=dist.included))
 
 	if(is.na(tmp$nu)){
 		break		

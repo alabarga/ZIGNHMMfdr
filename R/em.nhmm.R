@@ -227,102 +227,132 @@ em.nhmm.EM = function(x, Z, dist.included, Mvar, alttype, L, maxiter, nulltype, 
 	}
 }
 
+
 em.nhmm.E = function(x, Mvar, alttype, L, symmetric, v)
 {
-	res = list()
-	NUM = length(x)
-	delta = length(x[x==0])/length(x)
-	f0x = c()
-	f1x = c()
-	omega = c()
 	if(symmetric)
 	{
 		L = L*2
 	}
 	
-	# f1x
+	res = list()
 	if(alttype == "kernel")
 	{
-		f1x = Mvar$f1
+		res  =  forwardbackward1.kernel(x, Mvar$pii, Mvar$A, Mvar$f0, Mvar$f1)
+		res$wt = NA
 	}
 	else
 	{
-		f1x = rep(0, NUM)
 		if(L == 1)
 		{
-			f1x = dnorm(x, Mvar$f1[1], Mvar$f1[2])
+			forwardbackward.res  =  forwardbackward1(x, Mvar$pii, Mvar$A, Mvar$f0, Mvar$f1)
+			res$wt = NA
 		}
 		else
 		{
-			for (c in 1:L)
-			{
-				f1x = f1x+Mvar$pc[c]*dnorm(x, Mvar$f1[c, 1], Mvar$f1[c, 2])
-			}
+			res  =  forwardbackward(x, Mvar$pii, Mvar$A, Mvar$pc, Mvar$f0, Mvar$f1)
 		}
+		
 	}
-	
-	# f2x
-	if(length(Mvar$f0) < 3)
-	{
-		f0x<-dnorm(x, Mvar$f0[1], Mvar$f0[2])
-	}
-	else
-	{
-		f0x = delta * (x==0) + dnorm(x, Mvar$f0[1], Mvar$f0[2]) * (x!=0)
-		f1x[x==0] = 0
-	}
-	
-	# forward
-	alpha<-matrix(rep(0, NUM*2), NUM, 2, byrow=TRUE)
-	c0<-rep(0, NUM)
-	alpha[1, 1]<-Mvar$pii[1]*f0x[1]
-	alpha[1, 2]<-Mvar$pii[2]*f1x[1]
-	c0[1]<-1/sum(alpha[1, ])
-	alpha[1, ]<-c0[1]*alpha[1, ]
-	alpha.tmp <- .C('calAlpha',alpha=as.numeric(alpha),c0=as.numeric(c0),as.numeric(Mvar$A),as.numeric(f0x),as.numeric(f1x),as.integer(NUM))
-	alpha <- alpha.tmp$alpha
-	dim(alpha) <- c(NUM,2)
-	c0 <- alpha.tmp$c0
-	
-	# backward
-	beta<-matrix(rep(0, NUM*2), NUM, 2, byrow=TRUE)
-	beta[NUM, 1]<-c0[NUM]
-	beta[NUM, 2]<-c0[NUM]
-	beta.tmp <- .C('calBeta',beta=as.numeric(beta),as.numeric(c0),as.numeric(Mvar$A),as.numeric(f0x),as.numeric(f1x),as.integer(NUM))
-	beta <- beta.tmp$beta
-	dim(beta) <- c(NUM,2)
-	
-	# lfdr
-	lfdr<-rep(0, NUM)
-	lfdr.tmp <- .C('calLfdr',as.numeric(alpha),as.numeric(beta),lfdr=as.numeric(lfdr),as.integer(NUM))
-	lfdr <- lfdr.tmp$lfdr
-	
-	# gamma & dgamma
-	gamma<-matrix(1:(NUM*2), NUM, 2, byrow=TRUE)
-	gamma[NUM, ]<-c(lfdr[NUM], 1-lfdr[NUM])
-	dgamma<-array(rep(0, (NUM-1)*4), c(2, 2, (NUM-1)))
-	gamma.tmp <- .C('calGamma',as.numeric(alpha),as.numeric(beta),as.numeric(Mvar$A),as.numeric(f0x),as.numeric(f1x),gamma=as.numeric(gamma),dgamma=as.numeric(dgamma),as.integer(NUM))
-	gamma <- gamma.tmp$gamma
-	dgamma <- gamma.tmp$dgamma
-	dim(gamma) <- c(NUM,2)
-	dim(dgamma) <- c(2, 2, (NUM-1))
-	
-	if(alttype != "kernel" & L > 1)
-	{
-		# omega
-		omega = matrix(rep(0, NUM*L), NUM, L, byrow=TRUE)
-		for (c in 1:L)
-		{ 
-			f1c = dnorm(x, Mvar$f1[c, 1], Mvar$f1[c, 2])
-			omega[, c] = gamma[, 2] * Mvar$pc[c]*f1c/f1x
-			if(length(Mvar$f0) >= 3)
-			{
-				omega[x==0, c] = 0
-			}
-		}
-	}
-	return(list(gamma = gamma, dgamma = dgamma, omega = omega, c0 = c0, trans.par = Mvar$trans.par))
+	return(list(gamma = res$pr, dgamma = res$ts, omega = res$wt, c0 = res$rescale, trans.par = Mvar$trans.par))
 }
+
+#em.nhmm.E = function(x, Mvar, alttype, L, symmetric, v)
+#{
+#	res = list()
+#	NUM = length(x)
+#	delta = length(x[x==0])/length(x)
+#	f0x = c()
+#	f1x = c()
+#	omega = c()
+#	if(symmetric)
+#	{
+#		L = L*2
+#	}
+#	
+#	# f1x
+#	if(alttype == "kernel")
+#	{
+#		f1x = Mvar$f1
+#	}
+#	else
+#	{
+#		f1x = rep(0, NUM)
+#		if(L == 1)
+#		{
+#			f1x = dnorm(x, Mvar$f1[1], Mvar$f1[2])
+#		}
+#		else
+#		{
+#			for (c in 1:L)
+#			{
+#				f1x = f1x+Mvar$pc[c]*dnorm(x, Mvar$f1[c, 1], Mvar$f1[c, 2])
+#			}
+#		}
+#	}
+#	
+#	# f0x
+#	if(length(Mvar$f0) < 3)
+#	{
+#		f0x=dnorm(x, Mvar$f0[1], Mvar$f0[2])
+#	}
+#	else
+#	{
+#		f0x = delta * (x==0) + dnorm(x, Mvar$f0[1], Mvar$f0[2]) * (x!=0)
+#		f1x[x==0] = 0
+#	}
+#	
+#	# forward
+#	alpha=matrix(rep(0, NUM*2), NUM, 2, byrow=TRUE)
+#	c0=rep(0, NUM)
+#	alpha[1, 1]=Mvar$pii[1]*f0x[1]
+#	alpha[1, 2]=Mvar$pii[2]*f1x[1]
+#	c0[1]=1/sum(alpha[1, ])
+#	alpha[1, ]=c0[1]*alpha[1, ]
+#	alpha.tmp = .C('calAlpha',alpha=as.numeric(alpha),c0=as.numeric(c0),as.numeric(Mvar$A),as.numeric(f0x),as.numeric(f1x),as.integer(NUM))
+#	alpha = alpha.tmp$alpha
+#	dim(alpha) = c(NUM,2)
+#	c0 = alpha.tmp$c0
+#	
+#	# backward
+#	beta=matrix(rep(0, NUM*2), NUM, 2, byrow=TRUE)
+#	beta[NUM, 1]=c0[NUM]
+#	beta[NUM, 2]=c0[NUM]
+#	beta.tmp = .C('calBeta',beta=as.numeric(beta),as.numeric(c0),as.numeric(Mvar$A),as.numeric(f0x),as.numeric(f1x),as.integer(NUM))
+#	beta = beta.tmp$beta
+#	dim(beta) = c(NUM,2)
+#	
+#	# lfdr
+#	lfdr=rep(0, NUM)
+#	lfdr.tmp = .C('calLfdr',as.numeric(alpha),as.numeric(beta),lfdr=as.numeric(lfdr),as.integer(NUM))
+#	lfdr = lfdr.tmp$lfdr
+#	
+#	# gamma & dgamma
+#	gamma=matrix(1:(NUM*2), NUM, 2, byrow=TRUE)
+#	gamma[NUM, ]=c(lfdr[NUM], 1-lfdr[NUM])
+#	dgamma=array(rep(0, (NUM-1)*4), c(2, 2, (NUM-1)))
+#	gamma.tmp = .C('calGamma',as.numeric(alpha),as.numeric(beta),as.numeric(Mvar$A),as.numeric(f0x),as.numeric(f1x),gamma=as.numeric(gamma),dgamma=as.numeric(dgamma),as.integer(NUM))
+#	gamma = gamma.tmp$gamma
+#	dgamma = gamma.tmp$dgamma
+#	dim(gamma) = c(NUM,2)
+#	dim(dgamma) = c(2, 2, (NUM-1))
+#	
+#	if(alttype != "kernel" & L > 1)
+#	{
+#		# omega
+#		omega = matrix(rep(0, NUM*L), NUM, L, byrow=TRUE)
+#		for (c in 1:L)
+#		{ 
+#			f1c = dnorm(x, Mvar$f1[c, 1], Mvar$f1[c, 2])
+#			omega[, c] = gamma[, 2] * Mvar$pc[c]*f1c/f1x
+#			if(length(Mvar$f0) >= 3)
+#			{
+#				omega[x==0, c] = 0
+#			}
+#		}
+#	}
+#	return(list(gamma = gamma, dgamma = dgamma, omega = omega, c0 = c0, trans.par = Mvar$trans.par))
+#}
 
 em.nhmm.M = function(x, Z, dist.included, Evar, alttype, L, nulltype, symmetric, iter.CG, ptol, v)
 {
@@ -406,13 +436,15 @@ em.nhmm.M = function(x, Z, dist.included, Evar, alttype, L, nulltype, symmetric,
 			pc = c(pc,pc)
 		}
 	}
-	CG = try(em.nhmm.compute.CG(Z, dist.included, Evar$dgamma, Evar$gamma, Evar$trans.par, iter.CG, ptol, v = v))
+#	CG = try(em.nhmm.compute.CG(Z, dist.included, Evar$dgamma, Evar$gamma, Evar$trans.par, iter.CG = 10, ptol, v = v))
+	CG = try(update.trans.prob.nhmm(Z, Evar$dgamma, Evar$gamma, Evar$trans.par[1,], Evar$trans.par[2,], iter.conj.grad = 10, dist.included))
 	if(length(CG) == 1)
 	{
 		if(v) print("Error in CG")
 		return(-1)
 	}
-	return(list(pii = CG$pii, ptheta = ptheta, pc=pc, A = CG$A , trans.par = CG$trans.par, f0 = f0, f1 = f1))
+#	return(list(pii = CG$pii, ptheta = ptheta, pc=pc, A = CG$A , trans.par = CG$trans.par, f0 = f0, f1 = f1))
+	return(list(pii = CG$pii, ptheta = ptheta, pc=pc, A = CG$A , trans.par = rbind(CG$trans.par1, CG$trans.par2), f0 = f0, f1 = f1))
 }
 
 em.nhmm.compute.CG = function(Z, dist.included, dgamma, gamma, trans.par, iter.CG, ptol, v)
@@ -500,7 +532,7 @@ em.nhmm.line.search = function(Z, dist.included, dgamma, gamma, trans.par, phi, 
 		nu = nu - dQ / dQ2
 		difference = abs(dQ/ dQ2)
 		if(is.na(difference) | niter > 100){
-			nu <- NaN
+			nu = NaN
 			break
 		}
 	}

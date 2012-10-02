@@ -43,7 +43,6 @@ function(Z, dgamma, gamma, delta1, delta2, trans.par1, trans.par2, dist.included
 
 while(ptol > 1e-6){	
 	iter <- iter + 1
-	
 	trans.par1.new <- trans.par1 + nu.new*delta1
 	trans.par2.new <- trans.par2 + nu.new*delta2
 
