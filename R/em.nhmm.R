@@ -1,5 +1,5 @@
 
-em.nhmm = function(x, Z, dist, dist.included=TRUE, alttype='mixnormal', L=2, maxiter=1000, nulltype=1, symmetric=FALSE, seed = 1000, burn = 20, iter.CG = 1000, ptol=1e-3, core = 2, v)
+em.nhmm = function(x, Z, dist, dist.included=TRUE, alttype='mixnormal', L=2, maxiter=1000, nulltype=1, symmetric=FALSE, seed = 1000, burn = 20, iter.CG = 10, ptol=1e-3, core = 2, v)
 {
 	NUM = length(x)
 	
@@ -82,7 +82,6 @@ em.nhmm.runseed = function(x, Z, dist.included, alttype, L, seed, burn, nulltype
 		}
 		return(seed_EMvar)
 	}, mc.cores = core, zval = x, alttype=alttype, L=L, burn=burn, nulltype=nulltype, symmetric=symmetric, ptol=ptol, seed=seed, v = v)
-
 	
 	logL = c()
 	for(i in 1:seed)
