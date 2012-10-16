@@ -50,7 +50,7 @@ fdr.nhmm <- function(x, Z = NULL, dist = NULL, log.transform.dist = TRUE, alttyp
 			return(0)
 		}
 		if(log.transform.dist == TRUE) {
-			cat('Transforming distance','\n')
+			if(v) cat('Transforming distance','\n')
 			dist <- log2(dist+2)
 		}
 	}
@@ -66,8 +66,7 @@ fdr.nhmm <- function(x, Z = NULL, dist = NULL, log.transform.dist = TRUE, alttyp
 	}
 	}
 	if(modeltype == 'HMM'){
-		cat('Running with alltype ',alttype,', nulltype', nulltype,', modeltype ',modeltype,',symmetric',symmetric,', core',core,',verbose',v,'\n')
-
+		if(v) cat('Running with alltype ',alttype,', nulltype', nulltype,', modeltype ',modeltype,',symmetric',symmetric,', core',core,',verbose',v,'\n')
 		while(length(fdr_res)==1&n.try<3){
 			fdr_res <- try(em.hmm(x=x, alttype=alttype, L=L, maxiter=maxiter, nulltype=nulltype, symmetric=symmetric, seed=seed, burn=burn, ptol=ptol, core = core, v = v))
 			if(length(fdr_res)==1){cat('Numerical ERROR: Rerunning...','\n'); print(traceback())}
@@ -77,15 +76,8 @@ fdr.nhmm <- function(x, Z = NULL, dist = NULL, log.transform.dist = TRUE, alttyp
 
 	}
 	if(modeltype == 'NHMM' & (length(Z) >0|length(dist)>0)){
-		cat('Running with alltype ',alttype,', nulltype', nulltype,', modeltype ',modeltype,',symmetric',symmetric,', core',core,',verbose',v,'\n')
+		if(v) cat('Running with alltype ',alttype,', nulltype', nulltype,', modeltype ',modeltype,',symmetric',symmetric,', core',core,',verbose',v,'\n')
 		fdr_res <- em.nhmm(x=x, Z=Z, dist, dist.included=dist.included, alttype=alttype, L=L, maxiter=maxiter, nulltype=nulltype, symmetric=symmetric, seed=seed, burn=burn, ptol=ptol, core = core, v = v)
-#		while(length(fdr_res)==1&n.try<3){
-#			fdr_res <- try(em.nhmm(x=x, Z=Z, dist, dist.included=dist.included, alttype=alttype, L=L, maxiter=maxiter, nulltype=nulltype, symmetric=symmetric))
-#			if(length(fdr_res)==1){cat('Numerical ERROR: Rerunning...','\n'); print(traceback())}
-#			
-#			n.try <- n.try + 1
-#		}
-
 	}
 	if(modeltype == 'Indep'){
 		cat('Running with alltype ',alttype,', nulltype', nulltype,', modeltype ',modeltype,'...','\n')
@@ -99,7 +91,7 @@ fdr.nhmm <- function(x, Z = NULL, dist = NULL, log.transform.dist = TRUE, alttyp
 
 	}
 	if(length(fdr_res)==1)cat('ERROR: Try with different parameter settings','\n')
-	if(length(fdr_res)>1)cat('DONE!','\n')
+	if(v) if(length(fdr_res)>1) cat('DONE!','\n')
 	return(fdr_res)
 }
 

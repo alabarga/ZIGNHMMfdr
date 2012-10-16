@@ -2,7 +2,6 @@
 em.nhmm = function(x, Z, dist, dist.included=TRUE, alttype='mixnormal', L=2, maxiter=1000, nulltype=1, symmetric=FALSE, seed = 1000, burn = 20, iter.CG = 10, ptol=1e-3, core = 2, v)
 {
 	NUM = length(x)
-	
 	if(length(Z)>0){
 		if(is.vector(Z)==TRUE)
 		{
@@ -23,8 +22,12 @@ em.nhmm = function(x, Z, dist, dist.included=TRUE, alttype='mixnormal', L=2, max
 			if(v) print("Error: dist and Z are not compatible")
 			return(-1)
 		}
+		Z = cbind(dist,Z)
 	}
-	Z = cbind(dist,Z)
+	else
+	{
+		Z = cbind(dist)
+	}
 	
 	ptol = 1e-2
 	difference = 1
@@ -435,22 +438,22 @@ em.nhmm.M = function(x, Z, dist.included, Evar, alttype, L, nulltype, symmetric,
 			pc = c(pc,pc)
 		}
 	}
-#	CG = try(em.nhmm.compute.CG(Z, dist.included, Evar$dgamma, Evar$gamma, Evar$trans.par, iter.CG = 10, ptol, v = v))
-	CG = try(update.trans.prob.nhmm(Z, Evar$dgamma, Evar$gamma, Evar$trans.par[1,], Evar$trans.par[2,], iter.conj.grad = 10, dist.included))
+	CG = try(em.nhmm.compute.CG(Z, dist.included, Evar$dgamma, Evar$gamma, Evar$trans.par, iter.CG = 1000, ptol, v = v))
+#	CG = try(update.trans.prob.nhmm(Z, Evar$dgamma, Evar$gamma, Evar$trans.par[1,], Evar$trans.par[2,], iter.conj.grad = 10, dist.included))
 	if(length(CG) == 1)
 	{
 		if(v) print("Error in CG")
 		return(-1)
 	}
-#	return(list(pii = CG$pii, ptheta = ptheta, pc=pc, A = CG$A , trans.par = CG$trans.par, f0 = f0, f1 = f1))
-	return(list(pii = CG$pii, ptheta = ptheta, pc=pc, A = CG$A , trans.par = rbind(CG$trans.par1, CG$trans.par2), f0 = f0, f1 = f1))
+	return(list(pii = CG$pii, ptheta = ptheta, pc=pc, A = CG$A , trans.par = CG$trans.par, f0 = f0, f1 = f1))
+#	return(list(pii = CG$pii, ptheta = ptheta, pc=pc, A = CG$A , trans.par = rbind(CG$trans.par1, CG$trans.par2), f0 = f0, f1 = f1))
 }
 
 em.nhmm.compute.CG = function(Z, dist.included, dgamma, gamma, trans.par, iter.CG, ptol, v)
 {
 	gradient.old = em.nhmm.compute.gradient(Z, dist.included, dgamma, gamma, trans.par, v = v)
 	trans.par.old = trans.par
-	phi = -gradient.old
+	phi = rbind(rep(0, length(gradient.old)),-gradient.old)
 	difference = 1
 	niter = 0
 	while(difference > ptol & niter < iter.CG)
@@ -469,7 +472,8 @@ em.nhmm.compute.CG = function(Z, dist.included, dgamma, gamma, trans.par, iter.C
 		{
 			PR = 0
 		}
-		phi = -gradient.new + PR * phi
+		
+		phi = rbind(rep(0, length(gradient.new)), -gradient.new + PR * phi[2,])
 		gradient.old = gradient.new
 		if(dist.included & trans.par[2,4]<0 )
 		{
@@ -499,6 +503,10 @@ em.nhmm.line.search = function(Z, dist.included, dgamma, gamma, trans.par, phi, 
 	trans.par.new = trans.par
 	
 	fixe_1  = phi[,1] + sum( phi[,-c(1:3)]  * Z[1,] )
+	if(dist.included)
+	{
+		fixe_1  = phi[,1] + sum( c(-phi[,4],phi[,-c(1:4)])  * Z[1,] )
+	}
 	fixe_2  = array(0,c(2,2,N))
 	for(i in 1:2)
 	{
@@ -514,7 +522,8 @@ em.nhmm.line.search = function(Z, dist.included, dgamma, gamma, trans.par, phi, 
 	while(difference > ptol & niter < iter.CG)
 	{
 		niter = niter + 1
-		trans.par.new = trans.par + nu * phi
+		trans.par.new[1,] = trans.par[1,] + nu * phi[1,]
+		trans.par.new[2,] = trans.par[2,] + nu * phi[2,]
 		trans.prob = em.nhmm.pii.A(Z, dist.included, trans.par.new, v = v)
 		dQ  =  sum( fixe_1   * (gamma[1,] - trans.prob$pii) )
 		dQ2 = -sum( fixe_1^2 * trans.prob$pii * (1 - trans.prob$pii) )
@@ -539,7 +548,8 @@ em.nhmm.line.search = function(Z, dist.included, dgamma, gamma, trans.par, phi, 
 	{
 		if(v) print("Error in line search")
 	}
-	trans.par.new = trans.par + nu * phi
+	trans.par.new[1,] = trans.par[1,] + nu * phi[1,]
+	trans.par.new[2,] = trans.par[2,] + nu * phi[2,]
 	return(list(nu = nu, trans.par = trans.par.new))
 }
 
@@ -547,22 +557,68 @@ em.nhmm.compute.gradient = function(Z, dist.included, dgamma, gamma, trans.par, 
 {
 	N = dim(Z)[1] - 1
 	
-	gradient      = array(0,c(2,3+dim(Z)[2]))
+	gradient      = rep(0,3+dim(Z)[2])
 	
 	trans.prob    = em.nhmm.pii.A(Z, dist.included, trans.par, v = v)
 	
-	gradient[2,1] = gamma[1,2] - trans.prob$pii[2]
-	gradient[2,2] = sum( dgamma[1,2,] - (gamma[-dim(gamma)[1],1]*trans.prob$A[1,2,]) )
-	gradient[2,3] = sum( dgamma[2,2,] - (gamma[-dim(gamma)[1],2]*trans.prob$A[2,2,]) )
+	gradient[1] = gamma[1,2] - trans.prob$pii[2]
+	gradient[2] = sum(dgamma[1,2,] - gamma[-dim(gamma)[1],1]*trans.prob$A[1,2,])
+	gradient[3] = sum(dgamma[2,2,] - gamma[-dim(gamma)[1],2]*trans.prob$A[2,2,])
 	
-	gradient[2, -c(1:3)] = (gamma[1,2] - trans.prob$pii[1]) * Z[1,]
-	gradient[2, -c(1:3)] = (gradient[2, -c(1:3)] + colSums(( dgamma[1,2,] - (gamma[-dim(gamma)[1],1] * trans.prob$A[1,1,] ) ) * Z[-1,])) + (gradient[2, -c(1:3)] + colSums(( dgamma[2,2,] - (gamma[-dim(gamma)[1],2] * trans.prob$A[2,1,] ) ) * Z[-1,]))
+	tmp = gamma[-dim(Z)[1],1]*trans.prob$A[1,2,] + gamma[-dim(Z)[1],2]*trans.prob$A[2,2,]
+	gradient[-c(1:3)] = (gamma[1,2] - trans.prob$pii[2])*Z[1,] + apply(matrix((gamma[-1,2] - tmp)*Z[-1,],ncol=dim(Z)[2]),2,sum)
+	
+	if(dist.included)
+	{
+		gradient[4] = (gamma[1,2] - trans.prob$pii[2]) * Z[1,1] + sum( dgamma[1,2,] * Z[-1,1] ) - sum( dgamma[2,2,] * Z[-1,1] ) - sum( gamma[-dim(Z)[1],1] * trans.prob$A[1,2,] * Z[-1,1] ) + sum(gamma[-dim(Z)[1],2]*trans.prob$A[2,2,] * Z[-1,1])
+	}
 	
 	return(-gradient)
 }
 
 em.nhmm.pii.A = function(Z, dist.included, trans.par, v)
 {
+	# Z is a matrix of size m x p
+	p <- dim(Z)[2]
+	trans.par1 = trans.par[1,]
+	trans.par2 = trans.par[2,]
+	
+	pii <- rep(0,2)
+	A <- array(0,c(2,2,dim(Z)[1]-1))
+	
+	pii[1] <- sum(exp(trans.par1[1] + sum(trans.par1[-c(1:3)]*Z[1,])))/(sum(exp(trans.par1[1] + sum(trans.par1[-c(1:3)]*Z[1,]))) + sum(exp(trans.par2[1] + sum(trans.par2[-c(1:3)]*Z[1,]))))
+	pii[2] = 1 - pii[1]
+	
+	tmp12 <- t(trans.par2[-c(1:3)]*t(Z[-1,]))
+	tmp22 <- t(trans.par2[-c(1:3)]*t(Z[-1,]))
+	
+	if(dist.included==TRUE)
+	{
+		tmp12 <- t(c(trans.par2[4],trans.par2[-c(1:4)])*t(Z[-1,]))
+		tmp22 <- t(c(-trans.par2[4],trans.par2[-c(1:4)])*t(Z[-1,]))
+	}
+	
+	denom12 = denom22 <- rep(0,dim(Z)[1]-1)
+	for(i in 1:p)
+	{
+		denom12 <- denom12 + tmp12[,i]
+		denom22 <- denom22 + tmp22[,i]
+	}
+	
+	num11 <- exp(trans.par1[2])
+	num21 <- exp(trans.par1[3])
+	num12 <- exp(trans.par2[2] + denom12)
+	num22 <- exp(trans.par2[3] + denom22)
+	
+	
+	A[1,1,] <- num11/(num11 + num12)
+	A[1,2,] <- num12/(num11 + num12)
+	A[2,1,] <- num21/(num21 + num22)
+	A[2,2,] <- num22/(num21 + num22)
+	
+	return(list(A = A, pii = pii))
+	
+	
 	N = dim(Z)[1] - 1
 	pii = rep(0,2)
 	A = array(0,c(2,2,N))
