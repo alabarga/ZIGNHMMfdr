@@ -5,22 +5,24 @@ em.hmm = function(x, alttype="mixnormal", L=2, maxiter=1000, nulltype=2, symmetr
 	ptol = 1e-2
 	difference = 1
 	niter = 0
-	EMvar = em.hmm.runseed(x, alttype, L, seed, burn, nulltype, maxiter, symmetric, ptol, core, v = v)
+	tmpdir = paste(paste("fdrtmp",format(Sys.time(), "%H_%M_%S"),sep="_"),abs(rnorm(1))*10e15,sep="_")
+	dir.create(tmpdir)
+	EMvar = tryCatch({ em.hmm.runseed(x, alttype, L, seed, burn, nulltype, maxiter, symmetric, ptol, core, v = v, tmpdir=tmpdir) }, error = function(e) {unlink(tmpdir,r=T)})
 	best_EMvar = list()
 	while(length(best_EMvar) <= 1)
 	{
 		niter = niter + 1
-		best_EMvar = EMvar[[niter]]
+		best_EMvar = em.hmm.loadseed(EMvar[[niter]], tmpdir)
 		if(v) print(paste("best seed : ",best_EMvar$logL))
 		best_EMvar = try(em.hmm.EM(x, best_EMvar, alttype, L, maxiter, nulltype, symmetric, ptol, E=T, v = v))
 		if(length(EMvar) <= 1)
 		{
 			if(v) print("error: Trying next best seed")
-			best_EMvar = EMvar[[niter]]
+			best_EMvar = em.hmm.loadseed(EMvar[[niter]], tmpdir)
 		}
 	}
-	
 	lfdr = best_EMvar$gamma[, 1]
+	unlink(tmpdir,r=T)
 	if(length(best_EMvar) > 1)
 	{
 		logL  =  best_EMvar$logL
@@ -37,26 +39,42 @@ em.hmm = function(x, alttype="mixnormal", L=2, maxiter=1000, nulltype=2, symmetr
 	}
 }
 
-em.hmm.runseed = function(x, alttype, L, seed, burn, nulltype, maxiter, symmetric, ptol, core, v)
+em.hmm.loadseed = function(EMvar, tmpdir)
 {
-	EMvar = mclapply(1:seed, FUN = function(x, zval, alttype, L, burn, nulltype, symmetric, ptol, seed, v){
+	load(paste(paste(tmpdir, "seed_",sep="/"),EMvar$file,sep=""))
+	return(seed_EMvar)
+}
+
+
+em.hmm.runseed = function(x, alttype, L, seed, burn, nulltype, maxiter, symmetric, ptol, core, v, tmpdir=tmpdir)
+{
+	EMvar = mclapply(1:seed, FUN = function(x, zval, alttype, L, burn, nulltype, symmetric, ptol, seed, v, tmpdir){
 		seed_EMvar = list(logL=-Inf)
-		while(length(seed_EMvar)<=1)
+		while(length(seed_EMvar)<=2)
 		{
 			if(v) print(paste(paste(paste("seed : ",x),"/"),seed))
 			seed_Evar     = em.hmm.init(zval, 0.95, 0.2, L, symmetric, v = v)
 			seed_Mvar     = try(em.hmm.M(zval, seed_Evar, alttype, L, nulltype, symmetric, v = v))
-			if( length(seed_Mvar) == 1)
+			if( length(seed_Mvar) != 1)
+			{
+				rm(seed_Evar)
+				seed_EMvar    = try(em.hmm.EM(zval, seed_Mvar, alttype, L, burn, nulltype, symmetric, ptol, E=F, v = v))
+				rm(seed_Mvar)
+			}
+			else
 			{
 				if(v) print("Error in M")
-				converged=FALSE;
-				break
 			}
-			rm(seed_Evar)
-			seed_EMvar    = try(em.hmm.EM(zval, seed_Mvar, alttype, L, burn, nulltype, symmetric, ptol, E=F, v = v))
 		}
-		return(seed_EMvar)
-	}, mc.cores = core, zval = x, alttype=alttype, L=L, burn=burn, nulltype=nulltype, symmetric=symmetric, ptol=ptol, seed=seed, v = v)
+		return( tryCatch({
+			seed_file = paste(paste(tmpdir, "seed_",sep="/"),x,sep="")
+			save(seed_EMvar, file=seed_file)
+			return(list(logL = seed_EMvar$logL, file = x))
+		}, error = function(e) {
+			if(v) print(paste("error: in seed",x))
+			return(list(logL = -Inf, file = NA))
+		}))
+	}, mc.cores = core, zval = x, alttype=alttype, L=L, burn=burn, nulltype=nulltype, symmetric=symmetric, ptol=ptol, seed=seed, v = v, tmpdir = tmpdir)
 	
 	logL = c()
 	for(i in 1:seed)

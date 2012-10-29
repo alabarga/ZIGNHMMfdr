@@ -1,4 +1,4 @@
-fdr.nhmm <- function(x, Z = NULL, dist = NULL, log.transform.dist = TRUE, alttype = 'kernel', L=2, maxiter=1000, nulltype=0, modeltype = 'NHMM', symmetric=FALSE, seed = 20, burn = 20, ptol = 1e-3, core = 2, v = F)
+fdr.nhmm <- function(x, Z = NULL, dist = NULL, log.transform.dist = TRUE, alttype = 'kernel', L=2, maxiter=1000, nulltype=0, modeltype = 'NHMM', symmetric=FALSE, seed = 20, burn = 20, ptol = 1e-3, core = 2, iter.CG = 1000, GC.type = "new", v = F)
 {
 	if(modeltype!='NHMM'&modeltype!='HMM'&modeltype!='Indep'){
 		cat('Error: modeltype must be NHMM, HMM or Indep','\n')
@@ -77,7 +77,7 @@ fdr.nhmm <- function(x, Z = NULL, dist = NULL, log.transform.dist = TRUE, alttyp
 	}
 	if(modeltype == 'NHMM' & (length(Z) >0|length(dist)>0)){
 		if(v) cat('Running with alltype ',alttype,', nulltype', nulltype,', modeltype ',modeltype,',symmetric',symmetric,', core',core,',verbose',v,'\n')
-		fdr_res <- em.nhmm(x=x, Z=Z, dist, dist.included=dist.included, alttype=alttype, L=L, maxiter=maxiter, nulltype=nulltype, symmetric=symmetric, seed=seed, burn=burn, ptol=ptol, core = core, v = v)
+		fdr_res <- em.nhmm(x=x, Z=Z, dist, dist.included=dist.included, alttype=alttype, L=L, maxiter=maxiter, nulltype=nulltype, symmetric=symmetric, seed=seed, burn=burn, ptol=ptol, core = core, iter.CG = iter.CG, GC.type = GC.type, v = v)
 	}
 	if(modeltype == 'Indep'){
 		cat('Running with alltype ',alttype,', nulltype', nulltype,', modeltype ',modeltype,'...','\n')
